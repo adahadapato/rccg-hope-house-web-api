@@ -1,0 +1,29 @@
+# Frontend - maintained in its own Git repository
+rccg-hope-house-web/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Packages
+*.nupkg
+
+# Logs
+*.log
+
+# Archives
+*.zip
+
+# Local environment/secrets
+.env
+.env.*
+appsettings.Development.json
+
+# OS files
+.DS_Store
+Thumbs.db
