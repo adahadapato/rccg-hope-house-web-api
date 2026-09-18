@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Enums;
 
 namespace RccgHopeHouse.Application.Features.PrayerRequests.Commands;

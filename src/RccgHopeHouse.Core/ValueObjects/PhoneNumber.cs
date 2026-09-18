@@ -1,27 +1,32 @@
 ﻿using System.Text.RegularExpressions;
 
-public partial record PhoneNumber(string Value)
+namespace RccgHopeHouse.Core.ValueObjects
 {
-    [GeneratedRegex(@"^\+?[\d\s\-\(\)]{10,15}$", RegexOptions.Compiled, "en-US")]
-    private static partial Regex ValidPattern();
-
-    public static PhoneNumber Create(string phoneNumber)
+    public partial record PhoneNumber(string Value)
     {
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-            throw new ArgumentException("Phone number cannot be empty.", nameof(phoneNumber));
+        public const string Pattern = @"^\+?[\d\s\-\(\)]{10,15}$";
 
-        var cleaned = phoneNumber.Trim();
-        if (!ValidPattern().IsMatch(cleaned))
-            throw new ArgumentException("Invalid phone number format.", nameof(phoneNumber));
+        [GeneratedRegex(Pattern, RegexOptions.Compiled, "en-US")]
+        private static partial Regex ValidPattern();
 
-        return new PhoneNumber(cleaned);
-    }
+        public static PhoneNumber Create(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                throw new ArgumentException("Phone number cannot be empty.", nameof(phoneNumber));
 
-    public static PhoneNumber? CreateOrNull(string? phoneNumber)
-    {
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-            return null;
+            var cleaned = phoneNumber.Trim();
+            if (!ValidPattern().IsMatch(cleaned))
+                throw new ArgumentException("Invalid phone number format.", nameof(phoneNumber));
 
-        return Create(phoneNumber);
+            return new PhoneNumber(cleaned);
+        }
+
+        public static PhoneNumber? CreateOrNull(string? phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return null;
+
+            return Create(phoneNumber);
+        }
     }
 }

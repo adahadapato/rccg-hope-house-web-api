@@ -4,19 +4,12 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.PrayerRequests.Queries;
 
-/// <summary>
-/// Handler for fetching filtered, paginated prayer requests.
-/// </summary>
 public class GetPrayerRequestsQueryHandler : IRequestHandler<GetPrayerRequestsQuery, IReadOnlyList<PrayerRequestDto>>
 {
     private readonly IPrayerRequestRepository _repository;
 
     public GetPrayerRequestsQueryHandler(IPrayerRequestRepository repository) => _repository = repository;
 
-    /// <summary>
-    /// Fetches requests from repository and maps to DTOs.
-    /// Orders by CreatedAt descending (newest first).
-    /// </summary>
     public async Task<IReadOnlyList<PrayerRequestDto>> Handle(GetPrayerRequestsQuery request, CancellationToken ct)
     {
         var requests = await _repository.GetByStatusAsync(
@@ -26,14 +19,15 @@ public class GetPrayerRequestsQueryHandler : IRequestHandler<GetPrayerRequestsQu
             ct: ct);
 
         return requests.Select(r => new PrayerRequestDto(
-            r.Id,
-            r.RequesterName,
-            r.RequesterEmail,
-            r.PhoneNumber?.Value,
-            r.Content,
-            r.Status,
-            r.CreatedAt,
-            null, // PastoralNote not loaded in list view for performance
-            r.RespondedAt)).ToList();
+            Id: r.Id,
+            RequesterName: r.RequesterName,
+            IsAnonymous: r.IsAnonymous,
+            RequesterEmail: r.RequesterEmail?.Value,
+            PhoneNumber: r.PhoneNumber?.Value,
+            Content: r.Content,
+            Status: r.Status,
+            CreatedAt: r.CreatedAt,
+            PastoralNote: null, // not loaded in list view for performance
+            RespondedAt: r.RespondedAt)).ToList();
     }
 }

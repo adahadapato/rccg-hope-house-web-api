@@ -12,34 +12,33 @@ namespace RccgHopeHouse.Api.Endpoints.ChurchServices;
 /// Minimal API endpoints for church service schedules: public timetable and admin management.
 /// Supports recurrence patterns, Zoom integration, and day-based filtering.
 /// </summary>
-[Authorize] // Default policy; override with [AllowAnonymous] on public endpoints
+[Authorize]
 public static class ChurchServiceEndpoints
 {
-    /// <summary>
-    /// Registers all church service endpoints under the /services route group.
-    /// Public endpoints allow anonymous access; admin endpoints require ContentEditor role.
-    /// </summary>
     public static RouteGroupBuilder MapChurchServiceEndpoints(this RouteGroupBuilder group)
     {
         var services = group.MapGroup("/services")
-                            .WithTags("Church Services")
-                            .WithOpenApi();
+                            .WithTags("Church Services");
 
         // ===== Public Endpoints =====
         services.MapGet("/", GetListAsync)
                 .WithName("GetChurchServices")
-                .WithOpenApi(x => new(x)
-                {
-                    Summary = "Get church service schedule",
-                    Description = "Returns active services, optionally filtered by category or day of week."
-                })
+                .WithSummary("Get church service schedule")
+                .WithDescription("Returns active services by default, optionally filtered by category, day of week, or local vs. HQ-broadcast.")
                 .Produces<IReadOnlyList<ChurchServiceFeedDto>>(StatusCodes.Status200OK)
                 .ProducesProblem(StatusCodes.Status400BadRequest)
                 .AllowAnonymous();
 
+        services.MapGet("/{id:guid}", GetByIdAsync)
+                .WithName("GetChurchServiceById")
+                .WithSummary("Get single service by ID")
+                .Produces<ChurchServiceDto>(StatusCodes.Status200OK)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .AllowAnonymous();
+
         services.MapGet("/today", GetTodayAsync)
                 .WithName("GetTodayServices")
-                .WithOpenApi(x => new(x) { Summary = "Get today's service schedule" })
+                .WithSummary("Get today's service schedule")
                 .Produces<IReadOnlyList<ChurchServiceFeedDto>>(StatusCodes.Status200OK)
                 .ProducesProblem(StatusCodes.Status400BadRequest)
                 .AllowAnonymous();
@@ -50,14 +49,14 @@ public static class ChurchServiceEndpoints
 
         admin.MapPost("/", CreateAsync)
              .WithName("CreateChurchService")
-             .WithOpenApi(x => new(x) { Summary = "Create new service schedule" })
+             .WithSummary("Create new service schedule")
              .Produces<ChurchServiceDto>(StatusCodes.Status201Created)
              .ProducesValidationProblem(StatusCodes.Status400BadRequest)
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapPut("/{id:guid}", UpdateAsync)
              .WithName("UpdateChurchService")
-             .WithOpenApi(x => new(x) { Summary = "Update service time, location, or Zoom details" })
+             .WithSummary("Update service time, location, or Zoom details")
              .Produces<ChurchServiceDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound)
              .ProducesValidationProblem(StatusCodes.Status400BadRequest)
@@ -65,14 +64,14 @@ public static class ChurchServiceEndpoints
 
         admin.MapPost("/{id:guid}/toggle-active", ToggleActiveAsync)
              .WithName("ToggleChurchServiceActive")
-             .WithOpenApi(x => new(x) { Summary = "Activate/deactivate service (hide from public)" })
+             .WithSummary("Activate/deactivate service (hide from public)")
              .Produces<ChurchServiceDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound)
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapDelete("/{id:guid}", DeleteAsync)
              .WithName("DeleteChurchService")
-             .WithOpenApi(x => new(x) { Summary = "Permanently delete service schedule" })
+             .WithSummary("Permanently delete service schedule")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound)
              .ProducesProblem(StatusCodes.Status401Unauthorized);
@@ -82,33 +81,58 @@ public static class ChurchServiceEndpoints
 
     // ===== Public Handlers =====
 
+    /// <summary>
+    /// FIXED: previously mapped includeInactive directly onto IsActive,
+    /// which is backwards — includeInactive=true meant "filter to ONLY
+    /// inactive services" instead of "include inactive ones alongside
+    /// active ones." Now correctly maps: includeInactive=false (default)
+    /// → IsActive: true (active only); includeInactive=true → IsActive:
+    /// null (no filter, show everything).
+    /// </summary>
     private static async Task<IResult> GetListAsync(
         [FromQuery] ServiceCategory? category,
         [FromQuery] DayOfWeek? dayOfWeek,
-        [FromQuery] bool includeInactive,
-        [FromServices] IMediator mediator,
-        CancellationToken cancellationToken)
+        [FromQuery] bool? isLocal,
+        [FromQuery] bool includeInactive = false,
+        [FromServices] IMediator mediator = null!,
+        CancellationToken cancellationToken = default)
     {
-        // ✅ Use matching named arguments exactly as defined in the record
         var query = new GetChurchServicesQuery(
             Category: category,
             DayOfWeek: dayOfWeek,
-            IsActive: includeInactive);
+            IsActive: includeInactive ? null : true,
+            IsLocal: isLocal);
 
         var list = await mediator.Send(query, cancellationToken);
         return TypedResults.Ok(list);
     }
 
+    private static async Task<IResult> GetByIdAsync(
+        Guid id,
+        [FromServices] IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetChurchServiceByIdQuery(id);
+        var service = await mediator.Send(query, cancellationToken);
+        return TypedResults.Ok(service);
+    }
+
+    /// <summary>
+    /// FIXED: previously hardcoded IsActive: false, which — given IsActive's
+    /// real semantics (null = no filter, true = active only, false =
+    /// inactive only) — meant "today's schedule" only ever returned
+    /// deactivated/hidden services. Now correctly filters to active
+    /// services only.
+    /// </summary>
     private static async Task<IResult> GetTodayAsync(
         [FromServices] IMediator mediator,
         CancellationToken cancellationToken)
     {
         var today = DateTime.Today.DayOfWeek;
 
-        // ✅ Match parameter name exactly
         var query = new GetChurchServicesQuery(
             DayOfWeek: today,
-            IsActive: false);
+            IsActive: true);
 
         var list = await mediator.Send(query, cancellationToken);
         return TypedResults.Ok(list);
@@ -116,37 +140,30 @@ public static class ChurchServiceEndpoints
 
     // ===== Admin Handlers =====
 
-    /// <summary>
-    /// Handles POST /api/v1/services/admin requests.
-    /// Creates a new church service schedule (defaults to active).
-    /// </summary>
     private static async Task<IResult> CreateAsync(
         [FromBody] CreateChurchServiceRequest request,
         [FromServices] IMediator mediator,
         CancellationToken cancellationToken)
     {
         var command = new CreateChurchServiceCommand(
-            request.Name,
-            request.Category,
-            request.DayOfWeek,
-            request.StartTime,
-            request.EndTime,
-            request.Description,
-            request.Location,
-            request.ZoomId,
-            request.ZoomPasscode,
-            request.Recurrence,
-            request.DayOfMonth,
-            request.DisplayOrder);
+            Name: request.Name,
+            Category: request.Category,
+            DayOfWeek: request.DayOfWeek,
+            StartTime: request.StartTime,
+            EndTime: request.EndTime,
+            Description: request.Description,
+            Location: request.Location,
+            ZoomId: request.ZoomId,
+            ZoomPasscode: request.ZoomPasscode,
+            Recurrence: request.Recurrence,
+            DayOfMonth: request.DayOfMonth,
+            IsLocal: request.IsLocal,
+            DisplayOrder: request.DisplayOrder);
 
         var result = await mediator.Send(command, cancellationToken);
         return TypedResults.CreatedAtRoute(result, "GetChurchServiceById", new { id = result.Id });
     }
 
-    /// <summary>
-    /// Handles PUT /api/v1/services/admin/{id} requests.
-    /// Updates an existing service schedule's metadata and configuration.
-    /// </summary>
     private static async Task<IResult> UpdateAsync(
         Guid id,
         [FromBody] UpdateChurchServiceRequest request,
@@ -154,28 +171,25 @@ public static class ChurchServiceEndpoints
         CancellationToken cancellationToken)
     {
         var command = new UpdateChurchServiceCommand(
-            id,
-            request.Name,
-            request.Category,
-            request.DayOfWeek,
-            request.StartTime,
-            request.EndTime,
-            request.Description,
-            request.Location,
-            request.ZoomId,
-            request.ZoomPasscode,
-            request.Recurrence,
-            request.DayOfMonth,
-            request.DisplayOrder);
+            Id: id,
+            Name: request.Name,
+            Category: request.Category,
+            DayOfWeek: request.DayOfWeek,
+            StartTime: request.StartTime,
+            EndTime: request.EndTime,
+            Description: request.Description,
+            Location: request.Location,
+            ZoomId: request.ZoomId,
+            ZoomPasscode: request.ZoomPasscode,
+            Recurrence: request.Recurrence,
+            DayOfMonth: request.DayOfMonth,
+            IsLocal: request.IsLocal,
+            DisplayOrder: request.DisplayOrder);
 
         var result = await mediator.Send(command, cancellationToken);
         return TypedResults.Ok(result);
     }
 
-    /// <summary>
-    /// Handles POST /api/v1/services/admin/{id}/toggle-active requests.
-    /// Toggles a service's active status (hides/shows from public feed).
-    /// </summary>
     private static async Task<IResult> ToggleActiveAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -186,10 +200,6 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(result);
     }
 
-    /// <summary>
-    /// Handles DELETE /api/v1/services/admin/{id} requests.
-    /// Permanently removes a service schedule from the database.
-    /// </summary>
     private static async Task<IResult> DeleteAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -203,10 +213,6 @@ public static class ChurchServiceEndpoints
 
 // ==================== API Layer Request DTOs ====================
 
-/// <summary>
-/// Request payload for creating a new church service.
-/// Maps to Application.CreateChurchServiceCommand.
-/// </summary>
 public record CreateChurchServiceRequest(
     string Name,
     ServiceCategory Category,
@@ -219,12 +225,9 @@ public record CreateChurchServiceRequest(
     string? ZoomPasscode,
     RecurrencePattern Recurrence,
     int? DayOfMonth,
+    bool IsLocal = true,
     int DisplayOrder = 0);
 
-/// <summary>
-/// Request payload for updating an existing church service.
-/// Maps to Application.UpdateChurchServiceCommand.
-/// </summary>
 public record UpdateChurchServiceRequest(
     string Name,
     ServiceCategory Category,
@@ -237,4 +240,5 @@ public record UpdateChurchServiceRequest(
     string? ZoomPasscode,
     RecurrencePattern Recurrence,
     int? DayOfMonth,
+    bool IsLocal,
     int DisplayOrder);

@@ -13,57 +13,48 @@ namespace RccgHopeHouse.Api.Endpoints.Gallery;
 /// </summary>
 public static class GalleryEndpoints
 {
-    /// <summary>
-    /// Registers all gallery endpoints under the /gallery route group.
-    /// Public endpoints allow anonymous access; admin endpoints require MediaManager role.
-    /// </summary>
     public static RouteGroupBuilder MapGalleryEndpoints(this RouteGroupBuilder group)
     {
         var gallery = group.MapGroup("/gallery")
-                           .WithTags("Gallery")
-                           .WithOpenApi();
+                           .WithTags("Gallery");
 
         // ===== Public Endpoints =====
         gallery.MapGet("/", GetFeedAsync)
                .WithName("GetGalleryFeed")
-               .WithOpenApi(x => new(x)
-               {
-                   Summary = "Get public gallery feed",
-                   Description = "Returns paginated, filtered list of gallery images with thumbnails. Excludes full binary data."
-               })
+               .WithSummary("Get public gallery feed")
+               .WithDescription("Returns paginated, filtered list of gallery images with thumbnails. Excludes full binary data.")
                .Produces<IReadOnlyList<GalleryImageFeedDto>>()
                .AllowAnonymous();
 
         gallery.MapGet("/categories", GetCategoriesAsync)
                .WithName("GetGalleryCategories")
-               .WithOpenApi(x => new(x) { Summary = "Get gallery categories for filtering" })
+               .WithSummary("Get gallery categories for filtering")
                .Produces<IReadOnlyList<GalleryCategoryDto>>()
                .AllowAnonymous();
 
         gallery.MapGet("/tags", GetTagsAsync)
                .WithName("GetGalleryTags")
-               .WithOpenApi(x => new(x) { Summary = "Get gallery tags for filtering" })
+               .WithSummary("Get gallery tags for filtering")
                .Produces<IReadOnlyList<GalleryTagDto>>()
                .AllowAnonymous();
 
         gallery.MapGet("/{id:guid}", GetByIdAsync)
                .WithName("GetGalleryImageById")
-               .WithOpenApi(x => new(x) { Summary = "Get single image by ID" })
+               .WithSummary("Get single image by ID")
                .Produces<GalleryImageDto>(StatusCodes.Status200OK)
                .ProducesProblem(StatusCodes.Status404NotFound)
                .AllowAnonymous();
 
-        // Stream image binary data directly from database
         gallery.MapGet("/{id:guid}/image", StreamImageAsync)
                .WithName("StreamGalleryImage")
-               .WithOpenApi(x => new(x) { Summary = "Stream image binary data" })
+               .WithSummary("Stream image binary data")
                .Produces<byte[]>(StatusCodes.Status200OK, "image/jpeg")
                .ProducesProblem(StatusCodes.Status404NotFound)
                .AllowAnonymous();
 
         gallery.MapGet("/{id:guid}/thumbnail", StreamThumbnailAsync)
                .WithName("StreamGalleryThumbnail")
-               .WithOpenApi(x => new(x) { Summary = "Stream thumbnail binary data" })
+               .WithSummary("Stream thumbnail binary data")
                .Produces<byte[]>(StatusCodes.Status200OK, "image/jpeg")
                .ProducesProblem(StatusCodes.Status404NotFound)
                .AllowAnonymous();
@@ -74,37 +65,37 @@ public static class GalleryEndpoints
 
         admin.MapPost("/upload", UploadAsync)
              .WithName("UploadGalleryImage")
-             .WithOpenApi(x => new(x)
-             {
-                 Summary = "Upload new gallery image",
-                 Description = "Accepts multipart/form-data with image file and metadata. Optimizes image before DB storage."
-             })
+             .WithSummary("Upload new gallery image")
+             .WithDescription("Accepts multipart/form-data with image file and metadata. Optimizes image before DB storage.")
              .Produces<GalleryImageDto>(StatusCodes.Status201Created)
              .ProducesValidationProblem()
-             .DisableAntiforgery(); // For API clients; use CSRF protection for browser forms
+             .DisableAntiforgery()
+             .ExcludeFromDescription();
 
         admin.MapPut("/{id:guid}", UpdateAsync)
              .WithName("UpdateGalleryImage")
-             .WithOpenApi(x => new(x) { Summary = "Update image metadata or replace binary data" })
+             .WithSummary("Update image metadata or replace binary data")
              .Produces<GalleryImageDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound)
-             .ProducesValidationProblem();
+             .ProducesValidationProblem()
+             .DisableAntiforgery()
+             .ExcludeFromDescription();
 
         admin.MapPost("/{id:guid}/featured", SetFeaturedAsync)
              .WithName("SetGalleryImageFeatured")
-             .WithOpenApi(x => new(x) { Summary = "Toggle featured status for homepage highlights" })
+             .WithSummary("Toggle featured status for homepage highlights")
              .Produces<GalleryImageDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapPost("/{id:guid}/visibility", ToggleVisibilityAsync)
              .WithName("ToggleGalleryImageVisibility")
-             .WithOpenApi(x => new(x) { Summary = "Toggle public/private visibility" })
+             .WithSummary("Toggle public/private visibility")
              .Produces<GalleryImageDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapDelete("/{id:guid}", DeleteAsync)
              .WithName("DeleteGalleryImage")
-             .WithOpenApi(x => new(x) { Summary = "Permanently delete image from database" })
+             .WithSummary("Permanently delete image from database")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -153,10 +144,6 @@ public static class GalleryEndpoints
         return TypedResults.Ok(image);
     }
 
-    /// <summary>
-    /// Streams full-resolution image binary data with proper Content-Type header.
-    /// Uses AsNoTracking projection in repository to avoid loading unnecessary fields.
-    /// </summary>
     private static async Task<IResult> StreamImageAsync(
         Guid id,
         IMediator mediator,
@@ -171,10 +158,6 @@ public static class GalleryEndpoints
         return TypedResults.File(image.ImageData, image.ContentType, fileDownloadName: $"{image.Title}.jpg");
     }
 
-    /// <summary>
-    /// Streams thumbnail binary data for fast grid rendering.
-    /// Falls back to resizing full image if thumbnail not available.
-    /// </summary>
     private static async Task<IResult> StreamThumbnailAsync(
         Guid id,
         IMediator mediator,
@@ -186,40 +169,44 @@ public static class GalleryEndpoints
         if (image?.ImageData == null)
             return TypedResults.NotFound();
 
-        var thumbnail = image.ThumbnailData ?? image.ImageData; // Fallback to full image
+        var thumbnail = image.ThumbnailData ?? image.ImageData;
         return TypedResults.File(thumbnail, "image/jpeg", fileDownloadName: $"{image.Title}_thumb.jpg");
     }
 
     // ===== Admin Handlers =====
+
+    /// <summary>
+    /// Uses [AsParameters] with a bound request class rather than individual
+    /// [FromForm] parameters — Swashbuckle cannot generate an OpenAPI schema
+    /// for a Minimal API action mixing [FromForm] IFormFile with multiple
+    /// other [FromForm] scalars directly; binding them into one class
+    /// resolves this cleanly.
+    /// </summary>
     private static async Task<IResult> UploadAsync(
-        [FromForm] IFormFile file,
-        [FromForm] string title,
-        [FromForm] string altText,
-        [FromForm] Guid categoryId,
-        [FromForm] string? description,
-        [FromForm] DateTime? eventDate,
-        [FromForm] string? photographer,
-        [FromForm] List<string>? tags,
-        IMediator mediator,
-        CancellationToken ct)
+    [AsParameters] UploadGalleryImageRequest request,
+    IMediator mediator,
+    CancellationToken ct)
     {
-        if (file.Length == 0)
+        if (request.File.Length == 0)
             return TypedResults.BadRequest("Image file is required.");
 
-        // Read file into byte[] for Application layer processing
         using var ms = new MemoryStream();
-        await file.CopyToAsync(ms, ct);
+        await request.File.CopyToAsync(ms, ct);
         var imageData = ms.ToArray();
+
+        var tags = string.IsNullOrWhiteSpace(request.Tags)
+            ? null
+            : request.Tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
 
         var command = new UploadGalleryImageCommand(
             imageData,
-            file.ContentType,
-            categoryId,
-            title,
-            altText,
-            description,
-            eventDate,
-            photographer,
+            request.File.ContentType,
+            request.CategoryId,
+            request.Title,
+            request.AltText,
+            request.Description,
+            request.EventDate,
+            request.Photographer,
             tags);
 
         var result = await mediator.Send(command, ct);
@@ -228,29 +215,24 @@ public static class GalleryEndpoints
 
     private static async Task<IResult> UpdateAsync(
         Guid id,
-        [FromForm] string title,
-        [FromForm] string? description,
-        [FromForm] string altText,
-        [FromForm] string? photographer,
-        [FromForm] IFormFile? newImage,
-        [FromForm] DateTime? eventDate,
+        [AsParameters] UpdateGalleryImageRequest request,
         IMediator mediator,
         CancellationToken ct)
     {
         byte[]? newImageData = null;
         string? newContentType = null;
 
-        if (newImage?.Length > 0)
+        if (request.NewImage?.Length > 0)
         {
             using var ms = new MemoryStream();
-            await newImage.CopyToAsync(ms, ct);
+            await request.NewImage.CopyToAsync(ms, ct);
             newImageData = ms.ToArray();
-            newContentType = newImage.ContentType;
+            newContentType = request.NewImage.ContentType;
         }
 
         var command = new UpdateGalleryImageCommand(
-            id, title, description, altText, photographer,
-            newImageData, newContentType, eventDate);
+            id, request.Title, request.Description, request.AltText, request.Photographer,
+            newImageData, newContentType, request.EventDate);
 
         var result = await mediator.Send(command, ct);
         return TypedResults.Ok(result);
@@ -290,3 +272,33 @@ public static class GalleryEndpoints
 
 // ==================== API Layer Request DTOs ====================
 public record SetFeaturedRequest(bool IsFeatured);
+
+public class UploadGalleryImageRequest
+{
+    [FromForm] public IFormFile File { get; set; } = null!;
+    [FromForm] public string Title { get; set; } = string.Empty;
+    [FromForm] public string AltText { get; set; } = string.Empty;
+    [FromForm] public Guid CategoryId { get; set; }
+    [FromForm] public string? Description { get; set; }
+    [FromForm] public DateTime? EventDate { get; set; }
+    [FromForm] public string? Photographer { get; set; }
+
+    /// <summary>
+    /// Comma-separated tag names, e.g. "easter,youth,2026". Split into a
+    /// list in the handler. Using a single delimited string rather than
+    /// List&lt;string&gt; sidesteps a known ASP.NET Core Minimal API bug
+    /// where the form-binding expression compiler fails to build a request
+    /// delegate for List&lt;string&gt; properties on [AsParameters] types.
+    /// </summary>
+    [FromForm] public string? Tags { get; set; }
+}
+
+public class UpdateGalleryImageRequest
+{
+    [FromForm] public string Title { get; set; } = string.Empty;
+    [FromForm] public string? Description { get; set; }
+    [FromForm] public string AltText { get; set; } = string.Empty;
+    [FromForm] public string? Photographer { get; set; }
+    [FromForm] public IFormFile? NewImage { get; set; }
+    [FromForm] public DateTime? EventDate { get; set; }
+}

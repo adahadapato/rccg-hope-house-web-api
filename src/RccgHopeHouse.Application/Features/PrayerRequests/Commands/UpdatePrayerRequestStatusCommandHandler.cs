@@ -22,7 +22,11 @@ public class UpdatePrayerRequestStatusCommandHandler : IRequestHandler<UpdatePra
         var prayer = await _repository.GetByIdAsync(request.Id, ct)
             ?? throw new NotFoundException(nameof(PrayerRequest), request.Id);
 
-        // Domain method ensures status transitions follow church workflow rules
+        // Applies the new status and optional pastoral note. No transition
+        // restrictions — pastoral staff can freely move a request between any
+        // status (e.g., reopening a resolved request if the person follows up
+        // again), which fits a small prayer team's workflow better than a rigid
+        // state machine would.
         prayer.UpdateStatus(request.NewStatus, request.PastoralNote);
 
         await _repository.UpdateAsync(prayer, ct);

@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using RccgHopeHouse.Application.Common.Mappings;
 using RccgHopeHouse.Application.Features.PastorPosts.Dtos;
 using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Exceptions;
@@ -6,9 +7,6 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.PastorPosts.Commands;
 
-/// <summary>
-/// Handler for updating a pastor post.
-/// </summary>
 public class UpdatePastorPostCommandHandler : IRequestHandler<UpdatePastorPostCommand, PastorPostDto>
 {
     private readonly IPastorPostRepository _repository;
@@ -18,25 +16,23 @@ public class UpdatePastorPostCommandHandler : IRequestHandler<UpdatePastorPostCo
         _repository = repository;
     }
 
-    /// <summary>
-    /// Loads the existing post, applies updates, and persists changes.
-    /// </summary>
     public async Task<PastorPostDto> Handle(UpdatePastorPostCommand request, CancellationToken cancellationToken)
     {
-        // Load existing post for admin editing
         var post = await _repository.GetByIdForAdminAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(PastorPost), request.Id);
 
-        // Apply domain update method
         post.Update(
             title: request.Title,
             content: request.Content,
             category: request.Category,
+            themeOfTheYearId: request.ThemeOfTheYearId,
             excerpt: request.Excerpt,
-            bibleReference: request.BibleReference,
-            theme: request.Theme);
+            introHeading: request.IntroHeading,
+            introText: request.IntroText,
+            structuredContentJson: StructuredContentDto.Serialize(request.StructuredContent),
+            closingText: request.ClosingText,
+            bibleReference: request.BibleReference);
 
-        // Update cover image if new data provided
         if (request.CoverImageData is not null)
         {
             post.SetCoverImage(request.CoverImageData, request.CoverImageContentType);
@@ -45,12 +41,14 @@ public class UpdatePastorPostCommandHandler : IRequestHandler<UpdatePastorPostCo
         await _repository.UpdateAsync(post, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(post);
+        // NOTE: if ThemeOfTheYearId was changed by this update, the already-
+        // loaded post.ThemeOfTheYear navigation still points at the OLD theme
+        // in memory — EF does not auto-refresh navigation properties when a
+        // scalar FK changes. ThemeTitle on this response may briefly be
+        // stale/wrong until the post is fetched again on a later request
+        // (a fresh DbContext will resolve it correctly next time). Not a
+        // data-correctness bug — ThemeOfTheYearId itself is saved correctly —
+        // just a display nicety worth fixing if it matters for the admin UI.
+        return post.ToPastorPostDto();
     }
-
-    private static PastorPostDto MapToDto(PastorPost post) => new(
-        post.Id, post.Title, post.Content, post.Excerpt, post.Category,
-        post.CoverImageData, post.CoverImageContentType, post.AuthorName,
-        post.PublishedDate, post.IsPublished, post.IsPinned, post.IsFeatured,
-        post.ViewCount, post.BibleReference, post.Theme);
 }

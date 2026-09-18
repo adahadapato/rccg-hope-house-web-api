@@ -48,7 +48,6 @@ public record StructuredContentDto(
 /// <summary>
 /// Detailed Data Transfer Object for a single Pastor's Corner post.
 /// Used for admin views, single-post public views, and API responses.
-/// Includes full content, structured sections, and cover image binary data.
 /// </summary>
 public record PastorPostDto(
     Guid Id,
@@ -69,7 +68,8 @@ public record PastorPostDto(
     bool IsFeatured,
     int ViewCount,
     string? BibleReference,
-    string? Theme)
+    Guid ThemeOfTheYearId,
+    string? ThemeTitle)
 {
     public static PastorPostDto FromEntity(PastorPost post) => new(
         Id: post.Id,
@@ -90,7 +90,11 @@ public record PastorPostDto(
         IsFeatured: post.IsFeatured,
         ViewCount: post.ViewCount,
         BibleReference: post.BibleReference,
-        Theme: post.Theme);
+        ThemeOfTheYearId: post.ThemeOfTheYearId,
+        // ThemeTitle is only populated if the repository query included
+        // ThemeOfTheYear (.Include(p => p.ThemeOfTheYear)) — otherwise null,
+        // never throws.
+        ThemeTitle: post.ThemeOfTheYear?.ThemeTitle);
 }
 
 // ============================================================
@@ -99,11 +103,6 @@ public record PastorPostDto(
 
 /// <summary>
 /// Lightweight Data Transfer Object for the public scrolling feed.
-/// Excludes full content, structured sections, and cover image binary data
-/// to optimize memory and bandwidth for infinite-scroll rendering.
-/// NOTE: CoverImageData currently returns the same full-size image stored on
-/// the entity — there is no separate thumbnail pipeline yet. Treat this field
-/// as a future optimization target, not a guarantee of a small payload.
 /// </summary>
 public record PastorPostFeedDto(
     Guid Id,
@@ -115,7 +114,8 @@ public record PastorPostFeedDto(
     DateTime PublishedDate,
     bool IsPinned,
     bool IsFeatured,
-    string? Theme)
+    Guid ThemeOfTheYearId,
+    string? ThemeTitle)
 {
     public static PastorPostFeedDto FromEntity(PastorPost post) => new(
         Id: post.Id,
@@ -127,5 +127,6 @@ public record PastorPostFeedDto(
         PublishedDate: post.PublishedDate,
         IsPinned: post.IsPinned,
         IsFeatured: post.IsFeatured,
-        Theme: post.Theme);
+        ThemeOfTheYearId: post.ThemeOfTheYearId,
+        ThemeTitle: post.ThemeOfTheYear?.ThemeTitle);
 }

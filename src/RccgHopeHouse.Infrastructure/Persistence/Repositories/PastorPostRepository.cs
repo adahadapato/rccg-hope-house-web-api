@@ -8,7 +8,7 @@ namespace RccgHopeHouse.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// EF Core implementation of <see cref="IPastorPostRepository"/>.
-/// Optimized for public feed queries (lightweight projection) and admin management.
+/// Optimized for public feed queries and admin management.
 /// </summary>
 public class PastorPostRepository : IPastorPostRepository
 {
@@ -19,12 +19,21 @@ public class PastorPostRepository : IPastorPostRepository
     /// <inheritdoc />
     /// <remarks>
     /// Orders pinned posts first, then by PublishedDate descending.
-    /// Excludes full Content and CoverImageData to optimize memory for list views.
+    /// Includes ThemeOfTheYear so DTOs can populate ThemeTitle without a
+    /// second round-trip.
+    /// NOTE: doc previously claimed this "excludes full Content and
+    /// CoverImageData to optimize memory" — that was never actually true;
+    /// this query has no projection and loads the full entity including
+    /// both fields. Left as-is (not part of this change), but flagged since
+    /// it's a real gap between documented and actual behavior worth fixing
+    /// separately if feed performance becomes a concern.
     /// </remarks>
     public async Task<IReadOnlyList<PastorPost>> GetPublishedFeedAsync(
         PostCategory? category = null, int skip = 0, int take = 10, CancellationToken ct = default)
     {
-        var query = _context.PastorPosts.Where(p => p.IsPublished);
+        var query = _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
+            .Where(p => p.IsPublished);
         if (category.HasValue) query = query.Where(p => p.Category == category.Value);
 
         return await query
@@ -37,17 +46,21 @@ public class PastorPostRepository : IPastorPostRepository
 
     /// <inheritdoc />
     /// <remarks>
-    /// Loads full Content and CoverImageData for single-post detail views.
+    /// Loads full Content and CoverImageData for single-post detail views,
+    /// including ThemeOfTheYear so the detail page can display/link to the
+    /// theme without a second query.
     /// </remarks>
     public async Task<PastorPost?> GetPublishedByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
             .FirstOrDefaultAsync(p => p.Id == id && p.IsPublished, ct);
     }
 
     /// <inheritdoc />
     public async Task<PastorPost?> GetLatestPublishedAsync(CancellationToken ct = default) =>
         await _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
             .Where(p => p.IsPublished)
             .OrderByDescending(p => p.PublishedDate)
             .FirstOrDefaultAsync(ct);
@@ -55,6 +68,7 @@ public class PastorPostRepository : IPastorPostRepository
     /// <inheritdoc />
     public async Task<IReadOnlyList<PastorPost>> GetFeaturedPostsAsync(int count = 5, CancellationToken ct = default) =>
         await _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
             .Where(p => p.IsPublished && p.IsFeatured)
             .OrderByDescending(p => p.PublishedDate)
             .Take(count)
@@ -63,24 +77,50 @@ public class PastorPostRepository : IPastorPostRepository
     /// <inheritdoc />
     public async Task<IReadOnlyList<PastorPost>> GetPinnedPostsAsync(CancellationToken ct = default) =>
         await _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
             .Where(p => p.IsPublished && p.IsPinned)
             .OrderByDescending(p => p.PublishedDate)
             .ToListAsync(ct);
 
     /// <inheritdoc />
     /// <remarks>
-    /// Admin query: includes drafts and full binary data for editing.
+    /// Powers the "other topics under this theme" popup: fetches every
+    /// published post sharing the same ThemeOfTheYearId, newest first,
+    /// optionally excluding the post currently being viewed so it doesn't
+    /// list itself as a selectable sibling.
+    /// </remarks>
+    public async Task<IReadOnlyList<PastorPost>> GetPublishedByThemeAsync(
+        Guid themeOfTheYearId, Guid? excludePostId = null, CancellationToken ct = default)
+    {
+        var query = _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
+            .Where(p => p.IsPublished && p.ThemeOfTheYearId == themeOfTheYearId);
+
+        if (excludePostId.HasValue)
+            query = query.Where(p => p.Id != excludePostId.Value);
+
+        return await query
+            .OrderByDescending(p => p.PublishedDate)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Admin query: includes drafts, full binary data, and ThemeOfTheYear
+    /// for editing.
     /// </remarks>
     public async Task<IReadOnlyList<PastorPost>> GetAllForAdminAsync(bool includeDrafts = true, CancellationToken ct = default)
     {
-        var query = _context.PastorPosts.AsQueryable();
+        var query = _context.PastorPosts.Include(p => p.ThemeOfTheYear).AsQueryable();
         if (!includeDrafts) query = query.Where(p => p.IsPublished);
         return await query.OrderByDescending(p => p.PublishedDate).ToListAsync(ct);
     }
 
     /// <inheritdoc />
     public async Task<PastorPost?> GetByIdForAdminAsync(Guid id, CancellationToken ct = default) =>
-        await _context.PastorPosts.FirstOrDefaultAsync(p => p.Id == id, ct);
+        await _context.PastorPosts
+            .Include(p => p.ThemeOfTheYear)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
 
     /// <inheritdoc />
     public async Task AddAsync(PastorPost post, CancellationToken ct = default) =>

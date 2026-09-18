@@ -1,14 +1,15 @@
-﻿namespace RccgHopeHouse.Core.Enums
+﻿namespace RccgHopeHouse.Core.Enums;
+
+public enum ServiceCategory
 {
-    public enum ServiceCategory
-    {
-        WednesdayPrayer = 1,
-        SundaySchool = 2,
-        WorshipService = 3,
-        ThanksgivingService = 4,
-        LastFridayVigil = 5,
-        Evangelism = 6,
-        HouseFellowship = 7,
-        SpecialEvent = 8
-    }
+    WednesdayPrayer = 1,
+    SundaySchool = 2,
+    WorshipService = 3,
+    ThanksgivingService = 4,
+    LastFridayVigil = 5,
+    Evangelism = 6,
+    HouseFellowship = 7,
+    SpecialEvent = 8,
+    HolyCommunion = 9,
+    HolyGhostService = 10
 }

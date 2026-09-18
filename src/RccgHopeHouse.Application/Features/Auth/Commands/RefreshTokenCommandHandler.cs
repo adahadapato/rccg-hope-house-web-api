@@ -14,7 +14,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
     public async Task<AuthTokensDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         // 1. Call Core interface
-        var coreResult = await _authService.RefreshTokensAsync(request.RefreshToken, cancellationToken);
+        var coreResult = await _authService.RefreshTokenAsync(request.RefreshToken, cancellationToken);
 
         // 2. Map to Application DTO
         return new AuthTokensDto(

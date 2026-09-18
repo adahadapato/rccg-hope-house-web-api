@@ -5,10 +5,6 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-/// <summary>
-/// Handler for updating a church service.
-/// Loads existing entity, applies domain updates, and persists.
-/// </summary>
 public class UpdateChurchServiceCommandHandler : IRequestHandler<UpdateChurchServiceCommand, ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
@@ -20,7 +16,6 @@ public class UpdateChurchServiceCommandHandler : IRequestHandler<UpdateChurchSer
         var service = await _repository.GetByIdAsync(request.Id, ct)
             ?? throw new NotFoundException(nameof(Core.Entities.ChurchService), request.Id);
 
-        // Update base metadata
         service.Update(
             request.Name,
             request.Category,
@@ -29,9 +24,9 @@ public class UpdateChurchServiceCommandHandler : IRequestHandler<UpdateChurchSer
             request.EndTime,
             request.Description,
             request.Recurrence,
-            request.DayOfMonth);
+            request.DayOfMonth,
+            request.IsLocal);
 
-        // Update location & Zoom if provided
         if (!string.IsNullOrWhiteSpace(request.Location))
         {
             service.UpdateSchedule(request.StartTime, request.EndTime, request.Location, request.ZoomId, request.ZoomPasscode);
@@ -45,6 +40,6 @@ public class UpdateChurchServiceCommandHandler : IRequestHandler<UpdateChurchSer
         return new ChurchServiceDto(
             service.Id, service.Name, service.Category, service.DayOfWeek, service.StartTime, service.EndTime,
             service.Description, service.Location, service.ZoomId, service.ZoomPasscode, service.Recurrence,
-            service.DayOfMonth, service.IsActive, service.DisplayOrder);
+            service.DayOfMonth, service.IsLocal, service.IsActive, service.DisplayOrder);
     }
 }

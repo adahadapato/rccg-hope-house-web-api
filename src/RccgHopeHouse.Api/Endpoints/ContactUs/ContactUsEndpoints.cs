@@ -16,17 +16,13 @@ public static class ContactEndpoints
     public static RouteGroupBuilder MapContactUsEndpoints(this RouteGroupBuilder group)
     {
         var contact = group.MapGroup("/contact")
-                           .WithTags("Contact Us")
-                           .WithOpenApi();
+                           .WithTags("Contact Us");
 
         // ===== Public Endpoint =====
         contact.MapPost("/", SubmitAsync)
                .WithName("SubmitContactUs")
-               .WithOpenApi(x => new(x)
-               {
-                   Summary = "Submit contact form",
-                   Description = "Public form submission. Returns 204 No Content; admin is notified asynchronously."
-               })
+               .WithSummary("Submit contact form")
+               .WithDescription("Public form submission. Returns 204 No Content; admin is notified asynchronously.")
                .Produces(StatusCodes.Status204NoContent)
                .ProducesValidationProblem()
                .AllowAnonymous();
@@ -37,37 +33,37 @@ public static class ContactEndpoints
 
         admin.MapGet("/", GetListAsync)
              .WithName("GetContactUs")
-             .WithOpenApi(x => new(x) { Summary = "Get paginated contact requests for admin inbox" })
+             .WithSummary("Get paginated contact requests for admin inbox")
              .Produces<IReadOnlyList<ContactUsDto>>()
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapGet("/unread", GetUnreadAsync)
              .WithName("GetUnreadContactUs")
-             .WithOpenApi(x => new(x) { Summary = "Get unread requests only" })
+             .WithSummary("Get unread requests only")
              .Produces<IReadOnlyList<ContactUsDto>>()
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapGet("/{id:guid}", GetByIdAsync)
              .WithName("GetContactUsById")
-             .WithOpenApi(x => new(x) { Summary = "Get single request for review" })
+             .WithSummary("Get single request for review")
              .Produces<ContactUsDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapPost("/{id:guid}/mark-read", MarkAsReadAsync)
              .WithName("MarkContactUsAsRead")
-             .WithOpenApi(x => new(x) { Summary = "Mark request as read in admin inbox" })
+             .WithSummary("Mark request as read in admin inbox")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapPost("/{id:guid}/reply", ReplyAsync)
              .WithName("ReplyToContactUs")
-             .WithOpenApi(x => new(x) { Summary = "Send email reply to contact requester" })
+             .WithSummary("Send email reply to contact requester")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapDelete("/{id:guid}", DeleteAsync)
              .WithName("DeleteContactUs")
-             .WithOpenApi(x => new(x) { Summary = "Permanently delete contact request" })
+             .WithSummary("Permanently delete contact request")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -81,17 +77,17 @@ public static class ContactEndpoints
         CancellationToken ct)
     {
         var command = new SubmitContactUsCommand(
-            request.FirstName, request.LastName, request.Email,
-            request.Message, request.Reason, request.PhoneNumber);
+            FirstName: request.FirstName,
+            LastName: request.LastName,
+            Email: request.Email,
+            Message: request.Message,
+            Reason: request.Reason,
+            PhoneNumber: request.PhoneNumber);
 
         await mediator.Send(command, ct);
         return TypedResults.NoContent();
     }
 
-    /// <summary>
-    /// Handles DELETE /api/v1/contact/admin/{id} requests.
-    /// Permanently removes a contact request from the database.
-    /// </summary>
     private static async Task<IResult> DeleteAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -102,10 +98,6 @@ public static class ContactEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>
-    /// Handles GET /api/v1/contact/admin/{id} requests.
-    /// Returns full contact request details for admin review.
-    /// </summary>
     private static async Task<IResult> GetByIdAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -116,10 +108,6 @@ public static class ContactEndpoints
         return TypedResults.Ok(contact);
     }
 
-    /// <summary>
-    /// Handles POST /api/v1/contact/admin/{id}/mark-read requests.
-    /// Updates the request status to "read" in the admin inbox.
-    /// </summary>
     private static async Task<IResult> MarkAsReadAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -130,10 +118,6 @@ public static class ContactEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>
-    /// Handles POST /api/v1/contact/admin/{id}/reply requests.
-    /// Sends an email reply to the contact requester via IEmailService.
-    /// </summary>
     private static async Task<IResult> ReplyAsync(
         Guid id,
         [FromBody] ReplyToContactUsRequest request,
@@ -146,7 +130,6 @@ public static class ContactEndpoints
     }
 
     // ===== Admin Handlers =====
-
     private static async Task<IResult> GetListAsync(
         [FromQuery] bool unreadOnly,
         [FromQuery] int skip,
@@ -154,7 +137,6 @@ public static class ContactEndpoints
         [FromServices] IMediator mediator,
         CancellationToken cancellationToken)
     {
-        // ✅ Use exact record parameter names with named arguments
         var query = new GetContactUsQuery(
             UnreadOnly: unreadOnly,
             Skip: skip,
@@ -170,7 +152,6 @@ public static class ContactEndpoints
         [FromServices] IMediator mediator,
         CancellationToken cancellationToken)
     {
-        // ✅ Explicitly set UnreadOnly = true
         var query = new GetContactUsQuery(
             UnreadOnly: true,
             Skip: skip,
@@ -181,13 +162,9 @@ public static class ContactEndpoints
     }
 }
 
-    // ==================== API Layer Request DTOs ====================
-    public record SubmitContactRequestRequest(
+// ==================== API Layer Request DTOs ====================
+public record SubmitContactRequestRequest(
     string FirstName, string LastName, string Email, string Message,
     ContactReason Reason, string? PhoneNumber);
 
-//public record ReplyRequest(string Subject, string Body);
-/// <summary>
-/// Request payload for replying to a contact form submission.
-/// </summary>
 public record ReplyToContactUsRequest(string Subject, string Body);

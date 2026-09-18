@@ -12,6 +12,13 @@ namespace RccgHopeHouse.Core.Entities
         public string? SecondaryDescription { get; private set; }
         public string? CallToActionText { get; private set; }
 
+        /// <summary>
+        /// The topics/articles (PastorPosts) taught under this year's theme.
+        /// Lets a reader browse everything taught under a given year's theme,
+        /// past or present.
+        /// </summary>
+        public ICollection<PastorPost> Posts { get; private set; } = new List<PastorPost>();
+
         private ThemeOfTheYear() { } // EF Core parameterless constructor
 
         public static ThemeOfTheYear Create(

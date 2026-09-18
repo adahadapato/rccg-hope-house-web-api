@@ -4,10 +4,6 @@ using RccgHopeHouse.Core.Enums;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-/// <summary>
-/// Command to create a new church service schedule.
-/// Created as active by default; can be deactivated later.
-/// </summary>
 public record CreateChurchServiceCommand(
     string Name,
     ServiceCategory Category,
@@ -20,4 +16,5 @@ public record CreateChurchServiceCommand(
     string? ZoomPasscode,
     RecurrencePattern Recurrence,
     int? DayOfMonth,
+    bool IsLocal = true,
     int DisplayOrder = 0) : IRequest<ChurchServiceDto>;

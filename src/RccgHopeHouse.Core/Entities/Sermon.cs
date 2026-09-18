@@ -30,13 +30,24 @@
         }
 
         public void Publish() => IsPublished = true;
+
+        /// <summary>
+        /// FIXED: Previously assigned raw parameters directly without validation or
+        /// .Trim(), unlike Create() — allowing an update to silently corrupt a sermon
+        /// with an empty/whitespace title, speaker, or video URL, and leaving stray
+        /// whitespace untrimmed. Now matches Create()'s validation exactly.
+        /// </summary>
         public void UpdateDetails(string title, string speaker, DateTime serviceDate, string videoUrl, string? description)
         {
-            Title = title;
-            Speaker = speaker;
+            ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
+            ArgumentException.ThrowIfNullOrWhiteSpace(speaker, nameof(speaker));
+            ArgumentException.ThrowIfNullOrWhiteSpace(videoUrl, nameof(videoUrl));
+
+            Title = title.Trim();
+            Speaker = speaker.Trim();
             ServiceDate = serviceDate;
-            VideoUrl = videoUrl;
-            Description = description;
+            VideoUrl = videoUrl.Trim();
+            Description = description?.Trim();
             MarkAsUpdated();
         }
     }

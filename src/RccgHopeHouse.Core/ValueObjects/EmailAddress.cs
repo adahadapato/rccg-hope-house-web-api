@@ -1,5 +1,5 @@
 ﻿using System.Text.RegularExpressions;
-
+namespace RccgHopeHouse.Core.ValueObjects;
 public partial record EmailAddress(string Value)
 {
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled, "en-US")]

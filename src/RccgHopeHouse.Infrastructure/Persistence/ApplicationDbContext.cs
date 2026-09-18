@@ -1,14 +1,16 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Core.Entities;
-using RccgHopeHouse.Core.ValueObjects;
 using RccgHopeHouse.Infrastructure.Identity;
 
 namespace RccgHopeHouse.Infrastructure.Persistence;
 
 /// <summary>
 /// Central EF Core DbContext for the RCCG Hope House application.
-/// Manages domain entity mappings, Identity tables, value converters, and global query filters.
+/// Manages domain entity mappings, Identity tables, and global query filters.
+/// Per-entity property configuration (constraints, indexes, Value Object conversions)
+/// lives in the IEntityTypeConfiguration&lt;T&gt; classes under Persistence/Configurations,
+/// applied automatically via ApplyConfigurationsFromAssembly() below.
 /// </summary>
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
@@ -27,42 +29,30 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PrayerRequest> PrayerRequests => Set<PrayerRequest>();
     public DbSet<ChurchService> ChurchServices => Set<ChurchService>();
     public DbSet<ContactUs> ContactRequests => Set<ContactUs>();
-    public DbSet<ThanksgivingService> ThanksgivingServices => Set<ThanksgivingService>();
+    public DbSet<ThemeOfTheYear> ThemeOfTheYear => Set<ThemeOfTheYear>();
+    public DbSet<Member> Members => Set<Member>();
+    public DbSet<ChurchInfo> ChurchInfo => Set<ChurchInfo>();
+    public DbSet<ChurchContactMethod> ChurchContactMethods => Set<ChurchContactMethod>();
+    public DbSet<ServiceBroadcast> ServiceBroadcasts => Set<ServiceBroadcast>();
 
     /// <summary>
-    /// Configures the model schema, applies Fluent API configurations, and sets up value converters & global filters.
+    /// Configures the model schema, applies Fluent API configurations, and sets up global filters.
     /// </summary>
     /// <param name="builder">The ModelBuilder instance for schema configuration.</param>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Apply all IEntityTypeConfiguration implementations from this assembly
+        // Apply all IEntityTypeConfiguration implementations from this assembly —
+        // this is where per-entity constraints, indexes, and Value Object
+        // conversions (e.g. PhoneNumber, EmailAddress) are configured.
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
-        // Configure Value Object → Database column conversions
-        ConfigureValueConverters(builder);
 
         // Configure many-to-many join relationships
         ConfigureManyToMany(builder);
 
         // Apply soft-delete global query filter to all BaseEntity-derived entities
         ConfigureGlobalFilters(builder);
-
-        ConfigureAdditionalValueConverters(builder); // New method
-    }
-
-    /// <summary>
-    /// Registers EF Core value converters for domain Value Objects.
-    /// Ensures VOs are stored as primitive types but materialized as rich domain objects.
-    /// </summary>
-    private static void ConfigureValueConverters(ModelBuilder builder)
-    {
-        builder.Entity<PrayerRequest>()
-            .Property(p => p.PhoneNumber)
-            .HasConversion(
-                vo => vo.Value,
-                value => value != null ? Core.ValueObjects.PhoneNumber.CreateOrNull(value) : null);
     }
 
     /// <summary>
@@ -104,28 +94,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 builder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
         }
-    }
-
-    /// <summary>
-    /// Registers additional EF Core value converters for domain Value Objects.
-    /// Called from OnModelCreating to ensure proper database ↔ domain translation.
-    /// </summary>
-    private static void ConfigureAdditionalValueConverters(ModelBuilder builder)
-    {
-        // HtmlContent VO ↔ string
-        builder.Entity<PastorPost>()
-            .Property(p => p.Content)
-            .HasConversion(
-                vo => vo, // Store as string directly (since property is string)
-                value => HtmlContent.Create(value, false).ToString());
-
-        // SafeUrl VO ↔ string (for VideoUrl fields)
-        builder.Entity<Sermon>()
-            .Property(s => s.VideoUrl)
-            .HasConversion(
-                vo => vo, // Store as string directly (since property is string)
-                value => value == null ? null : SafeUrl.Create(value, false).Value);
-
-        // Add more converters as needed for other entities
     }
 }

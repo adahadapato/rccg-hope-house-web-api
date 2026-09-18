@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RccgHopeHouse.Application.Features.Sermons.Commands;
 using RccgHopeHouse.Application.Features.Sermons.Dtos;
-
 using RccgHopeHouse.Application.Features.Sermons.Queries;
 
 namespace RccgHopeHouse.Api.Endpoints.Sermons;
@@ -18,23 +17,19 @@ public static class SermonEndpoints
     public static RouteGroupBuilder MapSermonEndpoints(this RouteGroupBuilder group)
     {
         var sermons = group.MapGroup("/sermons")
-                           .WithTags("Sermons")
-                           .WithOpenApi();
+                           .WithTags("Sermons");
 
         // ===== Public Endpoints =====
         sermons.MapGet("/", GetListAsync)
                .WithName("GetSermons")
-               .WithOpenApi(x => new(x)
-               {
-                   Summary = "Get paginated list of sermons",
-                   Description = "Supports search by title/speaker and date filtering."
-               })
+               .WithSummary("Get paginated list of sermons")
+               .WithDescription("Supports search by title/speaker and date filtering.")
                .Produces<IReadOnlyList<SermonDto>>(StatusCodes.Status200OK)
                .AllowAnonymous();
 
         sermons.MapGet("/{id:guid}", GetByIdAsync)
                .WithName("GetSermonById")
-               .WithOpenApi(x => new(x) { Summary = "Get sermon details by ID" })
+               .WithSummary("Get sermon details by ID")
                .Produces<SermonDto>(StatusCodes.Status200OK)
                .ProducesProblem(StatusCodes.Status404NotFound)
                .AllowAnonymous();
@@ -43,23 +38,22 @@ public static class SermonEndpoints
         var admin = sermons.MapGroup("/admin")
                            .RequireAuthorization("RequireMediaManager");
 
-        // ✅ This maps to the CreateSermonAsync method defined below
         admin.MapPost("/", CreateSermonAsync)
              .WithName("CreateSermon")
-             .WithOpenApi(x => new(x) { Summary = "Create a new sermon record" })
+             .WithSummary("Create a new sermon record")
              .Produces<SermonDto>(StatusCodes.Status201Created)
              .ProducesValidationProblem();
 
         admin.MapPut("/{id:guid}", UpdateSermonAsync)
              .WithName("UpdateSermon")
-             .WithOpenApi(x => new(x) { Summary = "Update existing sermon details" })
+             .WithSummary("Update existing sermon details")
              .Produces<SermonDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound)
              .ProducesValidationProblem();
 
         admin.MapDelete("/{id:guid}", DeleteSermonAsync)
              .WithName("DeleteSermon")
-             .WithOpenApi(x => new(x) { Summary = "Delete a sermon record" })
+             .WithSummary("Delete a sermon record")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -112,7 +106,6 @@ public static class SermonEndpoints
 
         var result = await mediator.Send(command, cancellationToken);
 
-        // Returns 201 Created with Location header
         return TypedResults.Created(
             $"/api/v1/sermons/{result.Id}",
             result);

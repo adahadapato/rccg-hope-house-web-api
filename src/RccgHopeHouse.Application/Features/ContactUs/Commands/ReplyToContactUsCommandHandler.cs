@@ -37,7 +37,8 @@ public class ReplyToContactUsCommandHandler : IRequestHandler<ReplyToContactUsCo
             <p>Best regards,<br/>{adminName}</p>
         ";
 
-        await _emailService.SendAsync(contact.Email, request.Subject, htmlBody, ct);
+        //await _emailService.SendAsync(contact.Email, request.Subject, htmlBody, ct);
+        await _emailService.SendAsync(contact.Email.Value, request.Subject, htmlBody, ct);
         return Unit.Value;
     }
 }

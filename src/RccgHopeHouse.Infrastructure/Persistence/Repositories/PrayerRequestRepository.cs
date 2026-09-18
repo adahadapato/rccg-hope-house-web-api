@@ -15,20 +15,6 @@ public class PrayerRequestRepository : IPrayerRequestRepository
     private readonly ApplicationDbContext _context;
     public PrayerRequestRepository(ApplicationDbContext context) => _context = context;
 
-
-    // Add to existing PrayerRequestRepository
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<PrayerRequest>> GetAllAsync(int skip, int take, CancellationToken ct = default) =>
-        await _context.PrayerRequests.AsNoTracking()
-            .OrderByDescending(p => p.CreatedAt)
-            .Skip(skip).Take(take)
-            .ToListAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<int> GetTotalCountAsync(CancellationToken ct = default) =>
-        await _context.PrayerRequests.AsNoTracking().CountAsync(ct);
-
     /// <inheritdoc />
     public async Task<PrayerRequest?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _context.PrayerRequests.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -62,19 +48,4 @@ public class PrayerRequestRepository : IPrayerRequestRepository
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(CancellationToken ct = default) =>
         await _context.SaveChangesAsync(ct);
-
-    public Task<IReadOnlyList<PrayerRequest>> GetByStatusAsync(PrayerRequestStatus status, CancellationToken ct = default, int skip = 0, int take = 0)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<IEnumerable<PrayerRequest>> IPrayerRequestRepository.GetByStatusAsync(PrayerRequestStatus? status, int skip, int take, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetCountByStatusAsync(object pending, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
 }

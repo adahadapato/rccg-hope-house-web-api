@@ -10,7 +10,7 @@ namespace RccgHopeHouse.Core.Entities
         public string? Excerpt { get; private set; }
         public PostCategory Category { get; private set; }
 
-        // Structured content sections (Option B)
+        // Structured content sections
         public string? IntroHeading { get; private set; }
         public string? IntroText { get; private set; }
         public string? StructuredContentJson { get; private set; }
@@ -25,7 +25,20 @@ namespace RccgHopeHouse.Core.Entities
         public bool IsFeatured { get; private set; }
         public int ViewCount { get; private set; }
         public string? BibleReference { get; private set; }
-        public string? Theme { get; private set; }
+
+        /// <summary>
+        /// FK to the year's theme this article/topic was taught under.
+        /// Required — PastorPost is scoped exclusively to theme-driven article
+        /// content (teaching/devotional pieces), not general announcements,
+        /// so every post belongs to exactly one year's theme.
+        /// </summary>
+        public Guid ThemeOfTheYearId { get; private set; }
+
+        /// <summary>
+        /// Navigation property to the full theme (title, scripture, etc.)
+        /// this post was taught under.
+        /// </summary>
+        public ThemeOfTheYear ThemeOfTheYear { get; private set; } = null!;
 
         private PastorPost() { } // EF Core parameterless constructor
 
@@ -33,6 +46,7 @@ namespace RccgHopeHouse.Core.Entities
             string title,
             string content,
             PostCategory category,
+            Guid themeOfTheYearId,
             string authorName = "Pastor",
             DateTime? publishedDate = null,
             string? excerpt = null,
@@ -42,17 +56,20 @@ namespace RccgHopeHouse.Core.Entities
             string? closingText = null,
             byte[]? coverImageData = null,
             string? coverImageContentType = null,
-            string? bibleReference = null,
-            string? theme = null)
+            string? bibleReference = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
             ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
+
+            if (themeOfTheYearId == Guid.Empty)
+                throw new ArgumentException("A PastorPost must belong to a ThemeOfTheYear.", nameof(themeOfTheYearId));
 
             var post = new PastorPost
             {
                 Title = title.Trim(),
                 Content = content.Trim(),
                 Category = category,
+                ThemeOfTheYearId = themeOfTheYearId,
                 AuthorName = authorName.Trim(),
                 PublishedDate = publishedDate ?? default,
                 Excerpt = excerpt?.Trim(),
@@ -63,7 +80,6 @@ namespace RccgHopeHouse.Core.Entities
                 CoverImageData = coverImageData,
                 CoverImageContentType = coverImageContentType,
                 BibleReference = bibleReference?.Trim(),
-                Theme = theme?.Trim(),
                 IsPublished = false,
                 IsPinned = false,
                 IsFeatured = false,
@@ -95,27 +111,30 @@ namespace RccgHopeHouse.Core.Entities
             string title,
             string content,
             PostCategory category,
+            Guid themeOfTheYearId,
             string? excerpt = null,
             string? introHeading = null,
             string? introText = null,
             string? structuredContentJson = null,
             string? closingText = null,
-            string? bibleReference = null,
-            string? theme = null)
+            string? bibleReference = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
             ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
 
+            if (themeOfTheYearId == Guid.Empty)
+                throw new ArgumentException("A PastorPost must belong to a ThemeOfTheYear.", nameof(themeOfTheYearId));
+
             Title = title.Trim();
             Content = content.Trim();
             Category = category;
+            ThemeOfTheYearId = themeOfTheYearId;
             Excerpt = excerpt?.Trim();
             IntroHeading = introHeading?.Trim();
             IntroText = introText?.Trim();
             StructuredContentJson = structuredContentJson;
             ClosingText = closingText?.Trim();
             BibleReference = bibleReference?.Trim();
-            Theme = theme?.Trim();
 
             if (string.IsNullOrWhiteSpace(Excerpt))
                 Excerpt = GenerateExcerpt();

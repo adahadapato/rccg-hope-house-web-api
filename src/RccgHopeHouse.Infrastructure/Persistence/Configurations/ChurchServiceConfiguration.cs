@@ -24,5 +24,10 @@ public class ChurchServiceConfiguration : IEntityTypeConfiguration<ChurchService
         builder.HasIndex(s => s.DayOfWeek);
         builder.HasIndex(s => s.IsActive);
         builder.HasIndex(s => s.DisplayOrder);
+
+        // Supports filtering the public feed by local vs. HQ-broadcast
+        // services (RegularServices.tsx vs. MonthlyServices.tsx query
+        // separately by this flag).
+        builder.HasIndex(s => s.IsLocal);
     }
 }

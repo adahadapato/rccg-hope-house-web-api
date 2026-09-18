@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using RccgHopeHouse.Application.Features.PrayerRequests.Commands;
 using RccgHopeHouse.Core.Constants;
+using RccgHopeHouse.Core.ValueObjects;
 
 namespace RccgHopeHouse.Application.Features.PrayerRequests.Validators;
 
@@ -10,7 +11,8 @@ public class SubmitPrayerRequestCommandValidator : AbstractValidator<SubmitPraye
     {
         RuleFor(x => x.RequesterName)
             .NotEmpty().WithMessage(ValidationMessages.Required)
-            .MaximumLength(100).WithMessage(ValidationMessages.MaxLength);
+            .MaximumLength(100).WithMessage(ValidationMessages.MaxLength)
+            .When(x => !x.IsAnonymous);
 
         RuleFor(x => x.Content)
             .NotEmpty().WithMessage(ValidationMessages.Required)
@@ -21,7 +23,7 @@ public class SubmitPrayerRequestCommandValidator : AbstractValidator<SubmitPraye
             .When(x => !string.IsNullOrWhiteSpace(x.RequesterEmail));
 
         RuleFor(x => x.PhoneNumber)
-            .Must(phone => string.IsNullOrWhiteSpace(phone))
+            .Matches(PhoneNumber.Pattern)
             .WithMessage("Invalid phone number format. Use 10-15 digits with optional +, spaces, dashes, or parentheses.")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
     }

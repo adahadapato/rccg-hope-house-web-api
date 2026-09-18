@@ -12,7 +12,6 @@ public interface IPastorPostRepository
     /// <summary>
     /// Gets published posts for the public scrolling feed.
     /// Ordered by: Pinned posts first, then by PublishedDate (newest first).
-    /// Does NOT load full content or cover images to optimize performance.
     /// </summary>
     /// <param name="category">Optional category filter</param>
     /// <param name="skip">Number of posts to skip (pagination)</param>
@@ -47,6 +46,19 @@ public interface IPastorPostRepository
     /// Gets pinned posts that should appear at the top.
     /// </summary>
     Task<IReadOnlyList<PastorPost>> GetPinnedPostsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets all published posts (topics/articles) taught under the same year's
+    /// theme, ordered by PublishedDate descending. Used to populate the
+    /// "other topics under this theme" selector on a post's detail view.
+    /// </summary>
+    /// <param name="themeOfTheYearId">The theme to fetch sibling posts for.</param>
+    /// <param name="excludePostId">Optional post ID to exclude from the results (typically the post currently being viewed).</param>
+    /// <param name="ct">Cancellation token</param>
+    Task<IReadOnlyList<PastorPost>> GetPublishedByThemeAsync(
+        Guid themeOfTheYearId,
+        Guid? excludePostId = null,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Gets all posts (including drafts) for admin management.

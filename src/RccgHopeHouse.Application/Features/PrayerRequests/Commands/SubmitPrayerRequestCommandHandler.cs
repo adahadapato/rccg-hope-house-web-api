@@ -5,10 +5,6 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.PrayerRequests.Commands;
 
-/// <summary>
-/// Handler for public prayer request submission.
-/// Persists the request and triggers a fire-and-forget notification to the prayer team.
-/// </summary>
 public class SubmitPrayerRequestCommandHandler : IRequestHandler<SubmitPrayerRequestCommand, Unit>
 {
     private readonly IPrayerRequestRepository _repository;
@@ -25,21 +21,18 @@ public class SubmitPrayerRequestCommandHandler : IRequestHandler<SubmitPrayerReq
         _settings = settings;
     }
 
-    /// <summary>
-    /// Creates the prayer request entity, persists it, and notifies the pastoral team asynchronously.
-    /// </summary>
     public async Task<Unit> Handle(SubmitPrayerRequestCommand request, CancellationToken ct)
     {
         var prayer = PrayerRequest.Create(
-            requesterName: request.RequesterName,
             content: request.Content,
-            requesterEmail: request.RequesterEmail,
-            phoneNumber: request.PhoneNumber);
+            isAnonymous: request.IsAnonymous,
+            requesterName: request.RequesterName,
+            phoneNumber: request.PhoneNumber,
+            requesterEmail: request.RequesterEmail);
 
         await _repository.AddAsync(prayer, ct);
         await _repository.SaveChangesAsync(ct);
 
-        // Fire-and-forget admin notification
         if (!string.IsNullOrWhiteSpace(_settings.AdminContactEmail))
         {
             _ = NotifyPrayerTeamAsync(prayer, ct);
@@ -53,8 +46,8 @@ public class SubmitPrayerRequestCommandHandler : IRequestHandler<SubmitPrayerReq
         var subject = "New Prayer Request Submitted";
         var htmlBody = $@"
             <h3>New Prayer Request</h3>
-            <p><strong>Name:</strong> {prayer.RequesterName}</p>
-            {(string.IsNullOrWhiteSpace(prayer.RequesterEmail) ? "" : $"<p><strong>Email:</strong> {prayer.RequesterEmail}</p>")}
+            <p><strong>Name:</strong> {prayer.RequesterName}{(prayer.IsAnonymous ? " (submitted anonymously)" : "")}</p>
+            {(prayer.RequesterEmail is null ? "" : $"<p><strong>Email:</strong> {prayer.RequesterEmail.Value}</p>")}
             <p><strong>Request:</strong><br/>{prayer.Content}</p>
             <p><em>Submitted on {prayer.CreatedAt:MMMM dd, yyyy}</em></p>
             <p><a href='{_settings.AdminDashboardUrl}/prayer-requests/{prayer.Id}'>View in Admin Panel</a></p>

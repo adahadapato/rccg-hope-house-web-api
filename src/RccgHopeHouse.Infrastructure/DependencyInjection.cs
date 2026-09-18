@@ -74,7 +74,11 @@ public static class DependencyInjection
         services.AddScoped<IPrayerRequestRepository, PrayerRequestRepository>();
         services.AddScoped<IChurchServiceRepository, ChurchServiceRepository>();
         services.AddScoped<IContactUsRepository, ContactUsRepository>();
-        services.AddScoped<IThanksgivingRepository, ThanksgivingRepository>();
+        services.AddScoped<IThemeOfTheYearRepository, ThemeOfTheYearRepository>();
+        services.AddScoped<IMemberRepository, MemberRepository>();
+        services.AddScoped<IChurchInfoRepository, ChurchInfoRepository>();
+        services.AddScoped<IServiceBroadcastRepository, ServiceBroadcastRepository>();
+
 
         // 5. Service Implementations
         services.AddScoped<IAuthService, AuthService>();

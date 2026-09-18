@@ -13,8 +13,12 @@ public record UpdatePastorPostCommand(
     string Title,
     string Content,
     PostCategory Category,
+    Guid ThemeOfTheYearId,
     string? Excerpt,
+    string? IntroHeading,
+    string? IntroText,
+    StructuredContentDto? StructuredContent,
+    string? ClosingText,
     byte[]? CoverImageData,
     string? CoverImageContentType,
-    string? BibleReference,
-    string? Theme) : IRequest<PastorPostDto>;
+    string? BibleReference) : IRequest<PastorPostDto>;

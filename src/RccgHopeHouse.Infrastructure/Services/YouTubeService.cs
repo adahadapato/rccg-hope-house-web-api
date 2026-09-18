@@ -13,7 +13,6 @@ public class YouTubeService : IYouTubeService
 {
     private readonly Google.Apis.YouTube.v3.YouTubeService _client;
     private readonly string _apiKey;
-    private BaseClientService.Initializer initializer;
 
     /// <summary>
     /// Initializes the YouTube client with API key and base configuration.
@@ -27,11 +26,6 @@ public class YouTubeService : IYouTubeService
             ApplicationName = "RCCG-HopeHouse-Website"
         });
     }
-
-    //public YouTubeService(BaseClientService.Initializer initializer)
-    //{
-    //    _client = new Google.Apis.YouTube.v3.YouTubeService(initializer);
-    //}
 
     /// <inheritdoc />
     /// <remarks>

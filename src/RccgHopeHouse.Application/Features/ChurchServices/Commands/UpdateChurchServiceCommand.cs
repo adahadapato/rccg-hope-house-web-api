@@ -4,10 +4,6 @@ using RccgHopeHouse.Core.Enums;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-/// <summary>
-/// Command to update an existing service schedule.
-/// Supports time, location, Zoom, and recurrence adjustments.
-/// </summary>
 public record UpdateChurchServiceCommand(
     Guid Id,
     string Name,
@@ -21,4 +17,5 @@ public record UpdateChurchServiceCommand(
     string? ZoomPasscode,
     RecurrencePattern Recurrence,
     int? DayOfMonth,
+    bool IsLocal,
     int DisplayOrder) : IRequest<ChurchServiceDto>;

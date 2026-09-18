@@ -5,9 +5,6 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-/// <summary>
-/// Handler for toggling service visibility.
-/// </summary>
 public class ToggleActiveCommandHandler : IRequestHandler<ToggleActiveCommand, ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
@@ -27,6 +24,6 @@ public class ToggleActiveCommandHandler : IRequestHandler<ToggleActiveCommand, C
         return new ChurchServiceDto(
             service.Id, service.Name, service.Category, service.DayOfWeek, service.StartTime, service.EndTime,
             service.Description, service.Location, service.ZoomId, service.ZoomPasscode, service.Recurrence,
-            service.DayOfMonth, service.IsActive, service.DisplayOrder);
+            service.DayOfMonth, service.IsLocal, service.IsActive, service.DisplayOrder);
     }
 }

@@ -2,6 +2,7 @@
 using RccgHopeHouse.Application.Features.Auth.Dtos;
 using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
+using RccgHopeHouse.Core.Results;
 
 namespace RccgHopeHouse.Application.Features.Auth.Commands;
 
@@ -32,10 +33,10 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthTokensDto>
 
         // Map Core AuthResult → Application DTO
         return new AuthTokensDto(
-            result.AccessToken!,
-            result.RefreshToken!,
-            result.ExpiresAt!.Value,
-            result.Role!,
-            result.UserName);
+            result.AccessToken ?? string.Empty,
+            result.RefreshToken ?? string.Empty,
+            result.ExpiresAt ?? DateTime.MinValue,
+            result.Role ?? string.Empty,
+            result.UserName ?? string.Empty);
     }
 }

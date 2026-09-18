@@ -16,4 +16,5 @@ public record ChurchServiceFeedDto(
     string? Location,
     string? ZoomId,
     string? ZoomPasscode,
+    bool IsLocal,
     bool IsActive);

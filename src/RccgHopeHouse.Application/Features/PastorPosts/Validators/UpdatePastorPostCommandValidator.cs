@@ -9,6 +9,8 @@ namespace RccgHopeHouse.Application.Features.PastorPosts.Validators;
 /// </summary>
 public class UpdatePastorPostCommandValidator : AbstractValidator<UpdatePastorPostCommand>
 {
+    private const int MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
+
     public UpdatePastorPostCommandValidator()
     {
         RuleFor(x => x.Id)
@@ -25,10 +27,14 @@ public class UpdatePastorPostCommandValidator : AbstractValidator<UpdatePastorPo
         RuleFor(x => x.Category)
             .IsInEnum();
 
+        RuleFor(x => x.ThemeOfTheYearId)
+            .NotEmpty().WithMessage("A theme is required — every article must belong to a year's theme.");
+
         RuleFor(x => x.CoverImageData)
-            .Must(BeValidImageSize).When(x => x.CoverImageData is not null)
-            .WithMessage("Cover image cannot exceed 5MB.");
+            .Must(BeValidImageSize)
+            .WithMessage($"Cover image cannot exceed {MaxImageSizeBytes / 1024 / 1024}MB.");
     }
 
-    private bool BeValidImageSize(byte[] imageData) => imageData.Length <= 5 * 1024 * 1024;
+    private static bool BeValidImageSize(byte[]? imageData) =>
+        imageData is null || imageData.Length <= MaxImageSizeBytes;
 }

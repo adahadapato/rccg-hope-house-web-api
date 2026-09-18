@@ -19,5 +19,6 @@ public record ChurchServiceDto(
     string? ZoomPasscode,
     RecurrencePattern Recurrence,
     int? DayOfMonth,
+    bool IsLocal,
     bool IsActive,
     int DisplayOrder);

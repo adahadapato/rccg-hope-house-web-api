@@ -20,6 +20,14 @@ public static class PastorPostEndpoints
 
         // ===== Public Endpoints =====
 
+        posts.MapGet("/{id:guid}/siblings", GetSiblingsAsync)
+             .WithSummary("Get other topics under the same theme as this post")
+             .WithDescription("Returns other published posts sharing this post's ThemeOfTheYear, for the 'other topics' selector on the article detail view.")
+             .WithName("GetPastorPostSiblings")
+             .Produces<IReadOnlyList<PastorPostFeedDto>>(StatusCodes.Status200OK)
+             .ProducesProblem(StatusCodes.Status404NotFound)
+             .AllowAnonymous();
+
         posts.MapGet("/", GetFeedAsync)
              .WithSummary("Get public scrolling feed")
             .WithDescription("Returns paginated, pinned-first feed of pastor posts. Supports category filtering.")
@@ -42,6 +50,8 @@ public static class PastorPostEndpoints
         var admin = posts.MapGroup("/admin")
                          .WithTags("Pastor's Corner - Admin") // ← Group-level tags only
                          .RequireAuthorization("RequireContentEditor");
+
+
 
         admin.MapPost("/", CreateAsync)
              .WithSummary("Create new pastor post (draft)")
@@ -115,31 +125,61 @@ public static class PastorPostEndpoints
         return TypedResults.Ok(post);
     }
 
+    private static async Task<IResult> GetSiblingsAsync(
+    Guid id,
+    IMediator mediator,
+    CancellationToken ct)
+    {
+        var query = new GetPastorPostSiblingsQuery(id);
+        var siblings = await mediator.Send(query, ct);
+        return TypedResults.Ok(siblings);
+    }
+
     // ===== Admin Handlers =====
     private static async Task<IResult> CreateAsync(
-        [FromBody] CreatePastorPostRequest request,
-        IMediator mediator,
-        CancellationToken ct)
+    [FromBody] CreatePastorPostRequest request,
+    IMediator mediator,
+    CancellationToken ct)
     {
         var command = new CreatePastorPostCommand(
-            request.Title, request.Content, request.Category, request.Excerpt,
-            request.CoverImageData, request.CoverImageContentType,
-            request.BibleReference, request.Theme, request.AuthorName);
+            Title: request.Title,
+            Content: request.Content,
+            Category: request.Category,
+            ThemeOfTheYearId: request.ThemeOfTheYearId,
+            Excerpt: request.Excerpt,
+            IntroHeading: request.IntroHeading,
+            IntroText: request.IntroText,
+            StructuredContent: request.StructuredContent,
+            ClosingText: request.ClosingText,
+            CoverImageData: request.CoverImageData,
+            CoverImageContentType: request.CoverImageContentType,
+            BibleReference: request.BibleReference,
+            AuthorName: request.AuthorName);
 
         var result = await mediator.Send(command, ct);
         return TypedResults.CreatedAtRoute(result, "GetPastorPostById", new { id = result.Id });
     }
 
     private static async Task<IResult> UpdateAsync(
-        Guid id,
-        [FromBody] UpdatePastorPostRequest request,
-        IMediator mediator,
-        CancellationToken ct)
+    Guid id,
+    [FromBody] UpdatePastorPostRequest request,
+    IMediator mediator,
+    CancellationToken ct)
     {
         var command = new UpdatePastorPostCommand(
-            id, request.Title, request.Content, request.Category, request.Excerpt,
-            request.CoverImageData, request.CoverImageContentType,
-            request.BibleReference, request.Theme);
+            Id: id,
+            Title: request.Title,
+            Content: request.Content,
+            Category: request.Category,
+            ThemeOfTheYearId: request.ThemeOfTheYearId,
+            Excerpt: request.Excerpt,
+            IntroHeading: request.IntroHeading,
+            IntroText: request.IntroText,
+            StructuredContent: request.StructuredContent,
+            ClosingText: request.ClosingText,
+            CoverImageData: request.CoverImageData,
+            CoverImageContentType: request.CoverImageContentType,
+            BibleReference: request.BibleReference);
 
         var result = await mediator.Send(command, ct);
         return TypedResults.Ok(result);
@@ -179,13 +219,31 @@ public static class PastorPostEndpoints
 
 // ==================== API Layer Request DTOs ====================
 public record CreatePastorPostRequest(
-    string Title, string Content, PostCategory Category, string? Excerpt,
-    byte[]? CoverImageData, string? CoverImageContentType,
-    string? BibleReference, string? Theme, string AuthorName = "Pastor");
-
+    string Title,
+    string Content,
+    PostCategory Category,
+    Guid ThemeOfTheYearId,
+    string? Excerpt,
+    string? IntroHeading,
+    string? IntroText,
+    StructuredContentDto? StructuredContent,
+    string? ClosingText,
+    byte[]? CoverImageData,
+    string? CoverImageContentType,
+    string? BibleReference,
+    string AuthorName = "Pastor");
 public record UpdatePastorPostRequest(
-    string Title, string Content, PostCategory Category, string? Excerpt,
-    byte[]? CoverImageData, string? CoverImageContentType,
-    string? BibleReference, string? Theme);
+    string Title,
+    string Content,
+    PostCategory Category,
+    Guid ThemeOfTheYearId,
+    string? Excerpt,
+    string? IntroHeading,
+    string? IntroText,
+    StructuredContentDto? StructuredContent,
+    string? ClosingText,
+    byte[]? CoverImageData,
+    string? CoverImageContentType,
+    string? BibleReference);
 
 public record PinRequest(bool IsPinned);

@@ -12,5 +12,6 @@ public record GetChurchServicesQuery(
     ServiceCategory? Category = null,
     DayOfWeek? DayOfWeek = null,
     bool? IsActive = null,
+    bool? IsLocal = null,
     int Skip = 0,
     int Take = 20) : IRequest<IReadOnlyList<ChurchServiceFeedDto>>;

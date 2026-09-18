@@ -16,31 +16,39 @@ public class ChurchServiceRepository : IChurchServiceRepository
     public ChurchServiceRepository(ApplicationDbContext context) => _context = context;
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ChurchService>> GetAllActiveAsync(CancellationToken ct = default) =>
-        await _context.ChurchServices.AsNoTracking()
-            .Where(s => s.IsActive)
+    public async Task<ChurchService?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        await _context.ChurchServices.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// FIXED: previously an unimplemented stub throwing NotImplementedException
+    /// — meaning GET /api/services was completely broken. Now implemented,
+    /// with the new isLocal filter added alongside the existing ones.
+    /// </remarks>
+    public async Task<IReadOnlyList<ChurchService>> GetAllAsync(
+        ServiceCategory? category,
+        DayOfWeek? dayOfWeek,
+        bool? isActive,
+        bool? isLocal,
+        int skip,
+        int take,
+        CancellationToken ct = default)
+    {
+        var query = _context.ChurchServices.AsNoTracking().AsQueryable();
+
+        if (category.HasValue) query = query.Where(s => s.Category == category.Value);
+        if (dayOfWeek.HasValue) query = query.Where(s => s.DayOfWeek == dayOfWeek.Value);
+        if (isActive.HasValue) query = query.Where(s => s.IsActive == isActive.Value);
+        if (isLocal.HasValue) query = query.Where(s => s.IsLocal == isLocal.Value);
+
+        return await query
             .OrderBy(s => s.DisplayOrder)
             .ThenBy(s => s.DayOfWeek)
             .ThenBy(s => s.StartTime)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<ChurchService>> GetByCategoryAsync(ServiceCategory category, CancellationToken ct = default) =>
-        await _context.ChurchServices.AsNoTracking()
-            .Where(s => s.Category == category && s.IsActive)
-            .OrderBy(s => s.DayOfWeek)
-            .ToListAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<ChurchService>> GetByDayOfWeekAsync(DayOfWeek day, CancellationToken ct = default) =>
-        await _context.ChurchServices.AsNoTracking()
-            .Where(s => s.DayOfWeek == day && s.IsActive)
-            .OrderBy(s => s.StartTime)
-            .ToListAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<ChurchService?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        await _context.ChurchServices.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
+    }
 
     /// <inheritdoc />
     public async Task AddAsync(ChurchService service, CancellationToken ct = default) =>
@@ -63,9 +71,4 @@ public class ChurchServiceRepository : IChurchServiceRepository
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(CancellationToken ct = default) =>
         await _context.SaveChangesAsync(ct);
-
-    public Task<IEnumerable<ChurchService>> GetAllAsync(ServiceCategory? category, DayOfWeek? dayOfWeek, bool? isActive, int skip, int take, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
 }

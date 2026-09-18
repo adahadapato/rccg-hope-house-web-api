@@ -7,6 +7,10 @@ namespace RccgHopeHouse.Application.Features.ChurchServices.Validators;
 /// <summary>
 /// Validates UpdateChurchServiceCommand.
 /// Reuses create rules plus ID validation.
+/// NOTE: the previous StartTime &lt;= EndTime rule was removed — see
+/// CreateChurchServiceCommandValidator for the reasoning (midnight-crossing
+/// services like Last Friday Vigil and Holy Ghost Service would have been
+/// incorrectly rejected).
 /// </summary>
 public class UpdateChurchServiceCommandValidator : AbstractValidator<UpdateChurchServiceCommand>
 {
@@ -24,10 +28,6 @@ public class UpdateChurchServiceCommandValidator : AbstractValidator<UpdateChurc
 
         RuleFor(x => x.DayOfWeek)
             .IsInEnum();
-
-        RuleFor(x => x)
-            .Must(x => !x.StartTime.HasValue || !x.EndTime.HasValue || x.StartTime.Value <= x.EndTime.Value)
-            .WithMessage("Start time must be before end time.");
 
         RuleFor(x => x.ZoomId)
             .NotEmpty().When(x => x.Location?.Equals("Zoom", System.StringComparison.OrdinalIgnoreCase) == true)

@@ -16,17 +16,13 @@ public static class PrayerRequestEndpoints
     public static RouteGroupBuilder MapPrayerRequestEndpoints(this RouteGroupBuilder group)
     {
         var prayers = group.MapGroup("/prayer-requests")
-                           .WithTags("Prayer Requests")
-                           .WithOpenApi();
+                           .WithTags("Prayer Requests");
 
         // ===== Public Endpoint =====
         prayers.MapPost("/", SubmitAsync)
                .WithName("SubmitPrayerRequest")
-               .WithOpenApi(x => new(x)
-               {
-                   Summary = "Submit a new prayer request",
-                   Description = "Public form submission. Returns 204 No Content on success; pastoral team is notified asynchronously."
-               })
+               .WithSummary("Submit a new prayer request")
+               .WithDescription("Public form submission. Returns 204 No Content on success; pastoral team is notified asynchronously.")
                .RequireRateLimiting("Strict") // ← Prevent spam submissions
                .Produces(StatusCodes.Status204NoContent)
                .ProducesValidationProblem()
@@ -38,25 +34,25 @@ public static class PrayerRequestEndpoints
 
         admin.MapGet("/", GetListAsync)
              .WithName("GetPrayerRequests")
-             .WithOpenApi(x => new(x) { Summary = "Get paginated prayer requests for pastoral dashboard" })
+             .WithSummary("Get paginated prayer requests for pastoral dashboard")
              .Produces<IReadOnlyList<PrayerRequestDto>>()
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapGet("/stats", GetStatsAsync)
              .WithName("GetPrayerRequestStats")
-             .WithOpenApi(x => new(x) { Summary = "Get dashboard statistics (counts by status)" })
+             .WithSummary("Get dashboard statistics (counts by status)")
              .Produces<PrayerRequestStatsDto>()
              .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapGet("/{id:guid}", GetByIdAsync)
              .WithName("GetPrayerRequestById")
-             .WithOpenApi(x => new(x) { Summary = "Get single request for pastoral review" })
+             .WithSummary("Get single request for pastoral review")
              .Produces<PrayerRequestDto>(StatusCodes.Status200OK)
              .ProducesProblem(StatusCodes.Status404NotFound);
 
         admin.MapPut("/{id:guid}/status", UpdateStatusAsync)
              .WithName("UpdatePrayerRequestStatus")
-             .WithOpenApi(x => new(x) { Summary = "Update pastoral workflow status" })
+             .WithSummary("Update pastoral workflow status")
              .Produces(StatusCodes.Status204NoContent)
              .ProducesProblem(StatusCodes.Status404NotFound)
              .ProducesValidationProblem();
@@ -71,13 +67,14 @@ public static class PrayerRequestEndpoints
         CancellationToken ct)
     {
         var command = new SubmitPrayerRequestCommand(
-            request.RequesterName,
-            request.Content,
-            request.RequesterEmail,
-            request.RequesterPhone);
+            Content: request.Content,
+            IsAnonymous: request.IsAnonymous,
+            RequesterName: request.RequesterName,
+            PhoneNumber: request.RequesterPhone,
+            RequesterEmail: request.RequesterEmail);
 
         await mediator.Send(command, ct);
-        return TypedResults.NoContent(); // Don't expose internal IDs publicly
+        return TypedResults.NoContent();
     }
 
     // ===== Admin Handlers =====
@@ -124,8 +121,9 @@ public static class PrayerRequestEndpoints
 
 // ==================== API Layer Request DTOs ====================
 public record SubmitPrayerRequestRequest(
-    string RequesterName,
     string Content,
+    bool IsAnonymous,
+    string? RequesterName,
     string? RequesterEmail,
     string? RequesterPhone);
 

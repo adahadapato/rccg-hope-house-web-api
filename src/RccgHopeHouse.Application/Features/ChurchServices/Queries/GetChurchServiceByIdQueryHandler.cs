@@ -22,6 +22,6 @@ public class GetChurchServiceByIdQueryHandler : IRequestHandler<GetChurchService
         return new ChurchServiceDto(
             service.Id, service.Name, service.Category, service.DayOfWeek, service.StartTime, service.EndTime,
             service.Description, service.Location, service.ZoomId, service.ZoomPasscode, service.Recurrence,
-            service.DayOfMonth, service.IsActive, service.DisplayOrder);
+            service.DayOfMonth, service.IsLocal, service.IsActive, service.DisplayOrder);
     }
 }

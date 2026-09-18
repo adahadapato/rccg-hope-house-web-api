@@ -19,12 +19,13 @@ public class GetChurchServicesQueryHandler : IRequestHandler<GetChurchServicesQu
             category: request.Category,
             dayOfWeek: request.DayOfWeek,
             isActive: request.IsActive,
+            isLocal: request.IsLocal,
             skip: request.Skip,
             take: request.Take,
             ct: ct);
 
         return services.Select(s => new ChurchServiceFeedDto(
             s.Id, s.Name, s.Category, s.DayOfWeek, s.StartTime, s.EndTime,
-            s.Location, s.ZoomId, s.ZoomPasscode, s.IsActive)).ToList();
+            s.Location, s.ZoomId, s.ZoomPasscode, s.IsLocal, s.IsActive)).ToList();
     }
 }

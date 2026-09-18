@@ -1,12 +1,7 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
-using RccgHopeHouse.Application.Features.Auth.Dtos;
-using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
 using RccgHopeHouse.Core.Results;
@@ -29,9 +24,6 @@ public class AuthService : IAuthService
     private readonly JwtTokenService _tokenService;
     private readonly IDistributedCache _cache;
 
-    /// <summary>
-    /// Initializes the service with Identity manager and configuration for JWT secrets.
-    /// </summary>
     public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration,
         JwtTokenService tokenService, IDistributedCache cache)
     {
@@ -62,40 +54,10 @@ public class AuthService : IAuthService
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// In production, refresh tokens should be hashed and stored in the database for rotation/revocation.
-    /// This implementation demonstrates the cryptographic flow.
-    /// </remarks>
-    public Task<AuthResult> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        // Validate refresh token signature & expiry
-        var principal = GetPrincipalFromExpiredToken(refreshToken);
-        if (principal == null)
-            return Task.FromResult(new AuthResult(false, null, null, null, null, "Invalid refresh token.", null));
-
-        var email = principal.FindFirstValue(ClaimTypes.Email);
-        // Lookup user, generate new token pair
-        // Simplified for brevity; full implementation stores refresh tokens in DB
-        return Task.FromResult(new AuthResult(false, null, null, null, null, "Refresh flow requires DB token storage.", null));
-    }
-
-    // Inside AuthService.cs, change the return type to AuthenticationResult
-    //public async Task<AuthenticationResult> RefreshTokensAsync(string refreshToken, CancellationToken ct)
-    //{
-    //    // ... (validation, revocation check, user lookup logic remains identical) ...
-
-    //    var (accessToken, newRefreshToken, expiresAt) = _tokenService.GenerateTokens(user, roles);
-
-    //    // ✅ Return Core record, not Application DTO
-    //    return new AuthenticationResult(
-    //        AccessToken: accessToken,
-    //        RefreshToken: newRefreshToken,
-    //        ExpiresAt: expiresAt,
-    //        Role: roles.FirstOrDefault() ?? "Member",
-    //        UserName: user.UserName);
-    //}
-    /// <inheritdoc />
-    public async Task<AuthResult> RefreshTokensAsync(string refreshToken, CancellationToken ct)
+    /// <summary>
+    /// Validates a refresh token, checks revocation status, and issues a new token pair.
+    /// </summary>
+    public async Task<AuthResult> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         // 1. Validate refresh token signature and extract claims
         var principal = _tokenService.GetPrincipalFromExpiredToken(refreshToken);
@@ -103,7 +65,7 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid refresh token signature.");
 
         // 2. Extract user identifier from claims
-        var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var userGuid))
             throw new UnauthorizedAccessException("Refresh token missing user identifier.");
 
@@ -121,14 +83,6 @@ public class AuthService : IAuthService
 
         // 6. Generate new token pair
         var (accessToken, newRefreshToken, expiresAt) = _tokenService.GenerateTokens(user, roles);
-
-        // 7. Return DTO with new credentials
-        //return new AuthTokensDto(
-        //    AccessToken: accessToken,
-        //    RefreshToken: newRefreshToken,
-        //    ExpiresAt: expiresAt,
-        //    Role: roles.FirstOrDefault() ?? "Member",
-        //    UserName: user.UserName);
 
         return new AuthResult(
                 IsSuccess: true,
@@ -158,7 +112,9 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     public Task<bool> RevokeTokenAsync(string refreshToken, CancellationToken ct = default)
     {
-        // In production: mark refresh token as revoked in database
+        // ⚠️ STUB: does not actually write to _cache, so IsTokenRevokedAsync will
+        // never find this token as revoked. Logout does not currently invalidate
+        // refresh tokens. See open question below.
         return Task.FromResult(true);
     }
 
@@ -191,24 +147,5 @@ public class AuthService : IAuthService
         var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
         return (accessToken, refreshToken, expiry);
-    }
-
-    /// <summary>
-    /// Extracts claims from an expired JWT for refresh token validation.
-    /// </summary>
-    private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
-    {
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
-        var validationParameters = new TokenValidationParameters
-        {
-            ValidateAudience = false,
-            ValidateIssuer = false,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateLifetime = false // Allow expired tokens for refresh flow
-        };
-
-        var handler = new JwtSecurityTokenHandler();
-        return handler.ValidateToken(token, validationParameters, out _);
     }
 }

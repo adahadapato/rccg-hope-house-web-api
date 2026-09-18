@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using RccgHopeHouse.Application.Common.Mappings;
 using RccgHopeHouse.Application.Features.PastorPosts.Dtos;
 using RccgHopeHouse.Core.Interfaces;
 
@@ -27,16 +28,6 @@ public class GetPastorPostFeedQueryHandler : IRequestHandler<GetPastorPostFeedQu
             take: request.Take,
             ct: cancellationToken);
 
-        return posts.Select(post => new PastorPostFeedDto(
-            post.Id,
-            post.Title,
-            post.Excerpt ?? post.GenerateExcerpt(150),
-            post.Category,
-            post.CoverImageData, // Repository should return compressed thumbnails only
-            post.AuthorName,
-            post.PublishedDate,
-            post.IsPinned,
-            post.IsFeatured,
-            post.Theme)).ToList();
+        return posts.ToPastorPostFeedDtos();
     }
 }
