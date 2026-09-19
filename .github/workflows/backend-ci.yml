@@ -17,19 +17,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Download the backend repository onto the GitHub Actions runner.
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Install the .NET 10 SDK used by the RCCG Hope House solution.
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
+      # Display SDK/runtime information in the build log.
+      # This is useful when diagnosing build or deployment problems.
       - name: Display .NET information
         run: dotnet --info
 
+      # Restore all NuGet dependencies for the solution.
       - name: Restore dependencies
         run: dotnet restore RccgHopeHouse.sln
 
+      # Compile the complete solution in Release mode.
       - name: Build solution
         run: dotnet build RccgHopeHouse.sln --configuration Release --no-restore
+
+      # Create the production API package.
+      #
+      # IMPORTANT:
+      # SmarterASP.NET uses a 32-bit application pool for this site,
+      # therefore the production runtime must remain win-x86.
+      #
+      # The application is also published as self-contained so the
+      # required .NET runtime is included with the deployment.
+      - name: Publish production API
+        run: >
+          dotnet publish src/RccgHopeHouse.Api/RccgHopeHouse.Api.csproj
+          --configuration Release
+          --runtime win-x86
+          --self-contained true
+          --output ./publish
+
+      # Store the generated production package as a GitHub Actions
+      # artifact. This allows us to inspect the exact files produced
+      # by CI before enabling automatic production deployment.
+      - name: Upload production artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rccg-hope-house-api
+          path: ./publish
+          if-no-files-found: error
