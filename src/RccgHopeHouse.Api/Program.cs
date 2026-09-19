@@ -6,7 +6,9 @@ using RccgHopeHouse.Api.Endpoints.ChurchInfo;
 using RccgHopeHouse.Api.Endpoints.ChurchServices;
 using RccgHopeHouse.Api.Endpoints.ContactUs;
 using RccgHopeHouse.Api.Endpoints.Gallery;
+using RccgHopeHouse.Api.Endpoints.GivingTypes;
 using RccgHopeHouse.Api.Endpoints.Members;
+using RccgHopeHouse.Api.Endpoints.Offerings;
 using RccgHopeHouse.Api.Endpoints.PastorPosts;
 using RccgHopeHouse.Api.Endpoints.PrayerRequests;
 using RccgHopeHouse.Api.Endpoints.Sermons;
@@ -60,6 +62,8 @@ api.MapSermonEndpoints();
 api.MapChurchInfoEndpoints();
 api.MapMemberEndpoints();
 api.MapServiceBroadcastEndpoints();
+api.MapGivingTypeEndpoints();
+api.MapOfferingEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .ExcludeFromDescription();

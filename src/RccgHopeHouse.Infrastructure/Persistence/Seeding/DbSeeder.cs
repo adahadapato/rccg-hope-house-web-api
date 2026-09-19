@@ -24,6 +24,7 @@ public static class DbSeeder
         await SeedChurchInfoAsync(context, ct);
         await SeedChurchServicesAsync(context, ct);
         await SeedServiceBroadcastsAsync(context, ct);
+        await SeedGivingTypesAsync(context, ct);
         await SeedAdminAccountAsync(userManager, roleManager, configuration);
     }
 
@@ -92,6 +93,83 @@ public static class DbSeeder
         Console.WriteLine("=== SeedAdminAccountAsync: COMPLETED SUCCESSFULLY ===");
     }
 
+
+    /// <summary>
+    /// Seeds the initial giving types used by the Give Online feature.
+    ///
+    /// Giving types are stored in the database rather than represented by
+    /// an enum so that they can later be managed through the admin interface
+    /// without requiring a code change or redeployment.
+    ///
+    /// The seeding process is idempotent: each giving type is checked
+    /// individually before being inserted, allowing new giving types to be
+    /// added to the seed list in future without duplicating existing records.
+    /// </summary>
+    private static async Task SeedGivingTypesAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        var givingTypes = new[]
+        {
+        GivingType.Create(
+            name: "Tithe",
+            displayOrder: 1,
+            description: "Regular tithe giving."),
+
+        GivingType.Create(
+            name: "Offering",
+            displayOrder: 2,
+            description: "General church offering."),
+
+        GivingType.Create(
+            name: "Seed Offering",
+            displayOrder: 3,
+            description: "Giving offered as a seed of faith."),
+
+        GivingType.Create(
+            name: "Thanksgiving Offering",
+            displayOrder: 4,
+            description: "Giving offered in thanksgiving to God."),
+
+        GivingType.Create(
+            name: "Building Fund",
+            displayOrder: 5,
+            description: "Giving towards church building and development projects."),
+
+        GivingType.Create(
+            name: "Mission / Evangelism",
+            displayOrder: 6,
+            description: "Giving towards missions and evangelism activities."),
+
+        GivingType.Create(
+            name: "Welfare",
+            displayOrder: 7,
+            description: "Giving towards welfare and support for those in need."),
+
+        GivingType.Create(
+            name: "Special Offering",
+            displayOrder: 8,
+            description: "Giving towards special church programmes or purposes."),
+
+        GivingType.Create(
+            name: "Other",
+            displayOrder: 9,
+            description: "Giving for another purpose not listed above.")
+    };
+
+        foreach (var givingType in givingTypes)
+        {
+            var exists = await context.GivingTypes
+                .AnyAsync(g => g.Name == givingType.Name, ct);
+
+            if (exists)
+                continue;
+
+            await context.GivingTypes.AddAsync(givingType, ct);
+        }
+
+        await context.SaveChangesAsync(ct);
+    }
 
     /// <summary>
     /// Seeds one current-month broadcast per HQ service category (Holy
@@ -193,7 +271,7 @@ public static class DbSeeder
             category: ServiceCategory.WednesdayPrayer,
             dayOfWeek: DayOfWeek.Wednesday,
             startTime: new TimeSpan(19, 0, 0),
-            endTime: new TimeSpan(19, 40, 0),
+            endTime: new TimeSpan(19, 30, 0),
             description: "Online Prayer",
             recurrence: RecurrencePattern.Weekly,
             isLocal: true),

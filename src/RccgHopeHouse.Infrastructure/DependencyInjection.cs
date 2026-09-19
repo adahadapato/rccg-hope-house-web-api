@@ -78,6 +78,8 @@ public static class DependencyInjection
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<IChurchInfoRepository, ChurchInfoRepository>();
         services.AddScoped<IServiceBroadcastRepository, ServiceBroadcastRepository>();
+        services.AddScoped<IGivingTypeRepository, GivingTypeRepository>();
+        services.AddScoped<IOfferingRepository, OfferingRepository>();
 
 
         // 5. Service Implementations
