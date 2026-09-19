@@ -176,11 +176,20 @@ public static class DependencyInjection
         {
             options.AddPolicy("AllowClients", policy =>
                 policy.WithOrigins(
-                        "https://rccghopehouse.org.uk",
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "capacitor://localhost",
-                        "http://localhost:8080")
+                // Production website
+                "https://rccghopehouse.org.uk",
+
+                // Temporary SmarterASP.NET frontend URL
+                // Remove this when the permanent domain is fully in use.
+                "https://adahadapato-003-site1.dtempurl.com",
+
+                // Local web development
+                "http://localhost:3000",
+                "http://localhost:5173",
+
+                // Mobile / Capacitor development
+                "capacitor://localhost",
+                "http://localhost:8080")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials());

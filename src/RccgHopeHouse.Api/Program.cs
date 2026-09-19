@@ -41,7 +41,6 @@ else
     app.UseHsts();
 }
 
-app.UseExceptionHandler();
 app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.UseCors("AllowClients");
