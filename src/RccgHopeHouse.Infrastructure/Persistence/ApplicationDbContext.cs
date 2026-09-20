@@ -36,6 +36,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ServiceBroadcast> ServiceBroadcasts => Set<ServiceBroadcast>();
     public DbSet<GivingType> GivingTypes => Set<GivingType>();
     public DbSet<Offering> Offerings => Set<Offering>();
+    
 
     /// <summary>
     /// Configures the model schema, applies Fluent API configurations, and sets up global filters.

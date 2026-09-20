@@ -1,82 +1,120 @@
 ﻿namespace RccgHopeHouse.Core.Entities;
 
 /// <summary>
-/// Represents a category for organizing gallery images.
-/// Examples: "Sunday Services", "Youth Events", "Outreach Programs".
+/// Represents a category used to organise gallery images within
+/// RCCG Hope House.
+///
+/// Examples include Sunday Services, Youth Events,
+/// Member Celebrations and Outreach & Evangelism.
+///
+/// Gallery categories are stored as entities rather than enums so that
+/// authorised administrators can add, update, activate, deactivate
+/// and reorder categories without requiring application code changes.
 /// </summary>
 public class GalleryCategory : BaseEntity
 {
+    // ==================== Properties ====================
+
     /// <summary>
-    /// Category name (e.g., "Sunday Services").
+    /// The display name of the gallery category.
     /// </summary>
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Optional description of the category.
+    /// Optional description explaining the purpose of the category.
     /// </summary>
     public string? Description { get; private set; }
 
     /// <summary>
-    /// Optional cover image (stored as byte[] like other images).
-    /// Used for category thumbnails in gallery views.
+    /// Optional cover image used as the category thumbnail.
     /// </summary>
     public byte[]? CoverImageData { get; private set; }
 
     /// <summary>
-    /// Display order for sorting categories.
-    /// Lower numbers appear first.
+    /// Determines the order in which the category appears.
+    /// Lower values appear first.
     /// </summary>
     public int DisplayOrder { get; private set; }
 
     /// <summary>
-    /// Indicates if the category is active and visible.
-    /// Inactive categories are hidden from public views.
+    /// Determines whether the category is currently available
+    /// for public gallery use.
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
     /// <summary>
-    /// Navigation property to images in this category.
-    /// Configured as one-to-many relationship.
+    /// Images belonging to this gallery category.
     /// </summary>
-    public ICollection<GalleryImage> Images { get; private set; } = new List<GalleryImage>();
+    public ICollection<GalleryImage> Images { get; private set; }
+        = new List<GalleryImage>();
+
+    // ==================== Constructor ====================
 
     /// <summary>
-    /// EF Core parameterless constructor for entity materialization.
+    /// Parameterless constructor required by Entity Framework Core.
     /// </summary>
-    private GalleryCategory() { }
+    private GalleryCategory()
+    {
+    }
+
+    // ==================== Factory ====================
 
     /// <summary>
-    /// Factory method to create a new category.
+    /// Creates a new gallery category.
     /// </summary>
-    /// <param name="name">Category name (required, max 100 chars)</param>
-    /// <param name="description">Optional description</param>
-    /// <param name="displayOrder">Sort order (default: 0)</param>
-    /// <returns>New GalleryCategory instance</returns>
-    public static GalleryCategory Create(string name, string? description = null, int displayOrder = 0)
+    public static GalleryCategory Create(
+        string name,
+        int displayOrder,
+        string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+
+        if (displayOrder < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(displayOrder),
+                "Display order cannot be negative.");
+        }
 
         return new GalleryCategory
         {
             Name = name.Trim(),
-            Description = description?.Trim(),
+            Description = NormalizeOptionalText(description),
             DisplayOrder = displayOrder,
             IsActive = true
         };
     }
 
+    // ==================== Update ====================
+
     /// <summary>
-    /// Updates category metadata.
+    /// Updates the editable category details.
     /// </summary>
-    public void Update(string name, string? description)
+    public void Update(
+        string name,
+        string? description,
+        int displayOrder)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+
+        if (displayOrder < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(displayOrder),
+                "Display order cannot be negative.");
+        }
+
         Name = name.Trim();
-        Description = description?.Trim();
+        Description = NormalizeOptionalText(description);
+        DisplayOrder = displayOrder;
+
         MarkAsUpdated();
     }
 
+    // ==================== Cover Image ====================
+
     /// <summary>
-    /// Sets or updates the cover image binary data.
+    /// Sets or removes the cover image for the category.
     /// </summary>
     public void SetCoverImage(byte[]? coverImageData)
     {
@@ -84,8 +122,50 @@ public class GalleryCategory : BaseEntity
         MarkAsUpdated();
     }
 
-    /// <summary>
-    /// Activates or deactivates the category.
-    /// </summary>
-    public void ToggleActive() => IsActive = !IsActive;
+    // ==================== Activation ====================
+
+    public void Activate()
+    {
+        if (IsActive)
+            return;
+
+        IsActive = true;
+        MarkAsUpdated();
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+            return;
+
+        IsActive = false;
+        MarkAsUpdated();
+    }
+
+    // ==================== Display Order ====================
+
+    public void ChangeDisplayOrder(int displayOrder)
+    {
+        if (displayOrder < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(displayOrder),
+                "Display order cannot be negative.");
+        }
+
+        if (DisplayOrder == displayOrder)
+            return;
+
+        DisplayOrder = displayOrder;
+        MarkAsUpdated();
+    }
+
+    // ==================== Helpers ====================
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
 }

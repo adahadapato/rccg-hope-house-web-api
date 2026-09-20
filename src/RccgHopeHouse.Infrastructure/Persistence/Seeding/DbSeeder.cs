@@ -25,6 +25,7 @@ public static class DbSeeder
         await SeedChurchServicesAsync(context, ct);
         await SeedServiceBroadcastsAsync(context, ct);
         await SeedGivingTypesAsync(context, ct);
+        await SeedGalleryCategoriesAsync(context, ct);
         await SeedAdminAccountAsync(userManager, roleManager, configuration);
     }
 
@@ -91,6 +92,92 @@ public static class DbSeeder
 
         await userManager.AddToRoleAsync(admin, "Admin");
         Console.WriteLine("=== SeedAdminAccountAsync: COMPLETED SUCCESSFULLY ===");
+    }
+
+
+    /// <summary>
+    /// Seeds the initial gallery categories used to organise church images.
+    ///
+    /// Gallery categories are stored in the database so they can later be
+    /// managed through the admin interface without requiring a code change.
+    ///
+    /// The seeding process is idempotent. Each category is checked by name
+    /// before insertion, so restarting the application will not create
+    /// duplicate categories and new seed categories can safely be added later.
+    /// </summary>
+    private static async Task SeedGalleryCategoriesAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        var categories = new[]
+        {
+        GalleryCategory.Create(
+            name: "Sunday Services",
+            displayOrder: 1,
+            description: "Photos from regular Sunday worship services and church gatherings."),
+
+        GalleryCategory.Create(
+            name: "Special Services",
+            displayOrder: 2,
+            description: "Photos from special church services, celebrations and programmes."),
+
+        GalleryCategory.Create(
+            name: "Member Celebrations",
+            displayOrder: 3,
+            description: "Photos celebrating birthdays, anniversaries, achievements and other special moments involving church members."),
+
+        GalleryCategory.Create(
+            name: "Youth Events",
+            displayOrder: 4,
+            description: "Photos from youth services, programmes, activities and events."),
+
+        GalleryCategory.Create(
+            name: "Children",
+            displayOrder: 5,
+            description: "Photos from children's church programmes, activities and special events."),
+
+        GalleryCategory.Create(
+            name: "Outreach & Evangelism",
+            displayOrder: 6,
+            description: "Photos from evangelism, outreach and community mission activities."),
+
+        GalleryCategory.Create(
+            name: "Conferences & Events",
+            displayOrder: 7,
+            description: "Photos from conferences, seminars, conventions and other church events."),
+
+        GalleryCategory.Create(
+            name: "Community & Fellowship",
+            displayOrder: 8,
+            description: "Photos from fellowship meetings, community activities and social gatherings."),
+
+        GalleryCategory.Create(
+            name: "Church Leadership",
+            displayOrder: 9,
+            description: "Photos of church leaders, ministers and leadership activities."),
+
+        GalleryCategory.Create(
+            name: "Other",
+            displayOrder: 10,
+            description: "Gallery images that do not belong to another category.")
+    };
+
+        foreach (var category in categories)
+        {
+            var exists = await context.GalleryCategories
+                .AnyAsync(
+                    g => g.Name == category.Name,
+                    ct);
+
+            if (exists)
+                continue;
+
+            await context.GalleryCategories.AddAsync(
+                category,
+                ct);
+        }
+
+        await context.SaveChangesAsync(ct);
     }
 
 

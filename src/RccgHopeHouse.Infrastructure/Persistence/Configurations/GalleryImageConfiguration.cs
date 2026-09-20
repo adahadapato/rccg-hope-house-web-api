@@ -41,21 +41,6 @@ public class GalleryImageConfiguration : IEntityTypeConfiguration<GalleryImage>
     }
 }
 
-/// <summary>
-/// Configuration for <see cref="GalleryCategory"/>.
-/// </summary>
-public class GalleryCategoryConfiguration : IEntityTypeConfiguration<GalleryCategory>
-{
-    public void Configure(EntityTypeBuilder<GalleryCategory> builder)
-    {
-        builder.ToTable("GalleryCategories");
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
-        builder.Property(c => c.CoverImageData).HasColumnType("VARBINARY(MAX)");
-        builder.HasIndex(c => c.IsActive);
-        builder.HasIndex(c => c.DisplayOrder);
-    }
-}
 
 /// <summary>
 /// Configuration for <see cref="GalleryTag"/> with unique name constraint.

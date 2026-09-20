@@ -27,3 +27,10 @@ appsettings.Development.json
 # OS files
 .DS_Store
 Thumbs.db
+
+#others.
+AppSettings-keep.txt
+
+# Separate repositories
+RccgHopeHouse.Mobile/
+RccgHopeHouse.Web/

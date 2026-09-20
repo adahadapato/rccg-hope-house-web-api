@@ -3,53 +3,16 @@
 namespace RccgHopeHouse.Core.Interfaces;
 
 /// <summary>
-/// Repository interface for gallery operations.
-/// Defines data access contracts for images, categories, and tags.
-/// Implementations should use EF Core with proper async/await patterns.
+/// Repository interface for gallery image and tag operations.
+/// Gallery category operations are handled separately by
+/// <see cref="IGalleryCategoryRepository"/>.
 /// </summary>
 public interface IGalleryRepository
 {
-    // ==================== Categories ====================
-
-    /// <summary>
-    /// Retrieves all categories, optionally including image counts.
-    /// </summary>
-    Task<IReadOnlyList<GalleryCategory>> GetAllCategoriesAsync(
-        bool includeImageCount = false,
-        CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets a single category by ID.
-    /// </summary>
-    Task<GalleryCategory?> GetCategoryByIdAsync(Guid id, CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets a category with its images eagerly loaded.
-    /// Use sparingly - can be memory-intensive with large galleries.
-    /// </summary>
-    Task<GalleryCategory?> GetCategoryWithImagesAsync(Guid id, CancellationToken ct = default);
-
-    /// <summary>
-    /// Adds a new category to the database.
-    /// </summary>
-    Task AddCategoryAsync(GalleryCategory category, CancellationToken ct = default);
-
-    /// <summary>
-    /// Updates an existing category.
-    /// </summary>
-    Task UpdateCategoryAsync(GalleryCategory category, CancellationToken ct = default);
-
-    /// <summary>
-    /// Deletes a category. Images should be handled separately.
-    /// </summary>
-    Task DeleteCategoryAsync(GalleryCategory category, CancellationToken ct = default);
-
     // ==================== Images ====================
 
     /// <summary>
     /// Retrieves paginated images with optional filtering.
-    /// IMPORTANT: Only returns metadata and thumbnails, NOT full image data.
-    /// Full image data should be loaded separately to avoid memory issues.
     /// </summary>
     Task<IReadOnlyList<GalleryImage>> GetImagesAsync(
         Guid? categoryId = null,
@@ -61,8 +24,7 @@ public interface IGalleryRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the count of images matching the filter criteria.
-    /// Used for pagination calculations.
+    /// Gets the number of images matching the supplied filters.
     /// </summary>
     Task<int> GetImagesCountAsync(
         Guid? categoryId = null,
@@ -72,8 +34,7 @@ public interface IGalleryRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets a single image by ID, optionally including tags.
-    /// By default, does NOT load full image data - use GetImageDataAsync instead.
+    /// Gets a single gallery image by ID.
     /// </summary>
     Task<GalleryImage?> GetImageByIdAsync(
         Guid id,
@@ -81,68 +42,81 @@ public interface IGalleryRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets only the binary image data for a specific image.
-    /// Use this for serving images to avoid loading full entities.
+    /// Gets the full binary image data for an image.
     /// </summary>
-    Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken ct = default);
+    Task<byte[]?> GetImageDataAsync(
+        Guid id,
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Gets only the thumbnail binary data for fast list views.
+    /// Gets thumbnail binary data for an image.
     /// </summary>
-    Task<byte[]?> GetThumbnailDataAsync(Guid id, CancellationToken ct = default);
+    Task<byte[]?> GetThumbnailDataAsync(
+        Guid id,
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Gets featured images for homepage highlights.
-    /// Returns only thumbnails, not full images.
+    /// Gets featured public gallery images.
     /// </summary>
     Task<IReadOnlyList<GalleryImage>> GetFeaturedImagesAsync(
         int count = 10,
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the most recently uploaded images.
+    /// Gets recently uploaded public gallery images.
     /// </summary>
     Task<IReadOnlyList<GalleryImage>> GetRecentImagesAsync(
         int count = 20,
         CancellationToken ct = default);
 
     /// <summary>
-    /// Adds a new image to the database.
+    /// Adds a gallery image.
     /// </summary>
-    Task AddImageAsync(GalleryImage image, CancellationToken ct = default);
+    Task AddImageAsync(
+        GalleryImage image,
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Updates an existing image (metadata or binary data).
+    /// Updates a gallery image.
     /// </summary>
-    Task UpdateImageAsync(GalleryImage image, CancellationToken ct = default);
+    Task UpdateImageAsync(
+        GalleryImage image,
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes an image from the database.
+    /// Deletes a gallery image.
     /// </summary>
-    Task DeleteImageAsync(GalleryImage image, CancellationToken ct = default);
+    Task DeleteImageAsync(
+        GalleryImage image,
+        CancellationToken ct = default);
 
     // ==================== Tags ====================
 
     /// <summary>
-    /// Gets all tags for filtering UI.
+    /// Gets all gallery tags.
     /// </summary>
-    Task<IReadOnlyList<GalleryTag>> GetAllTagsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<GalleryTag>> GetAllTagsAsync(
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Gets a tag by name (case-insensitive).
+    /// Gets a gallery tag by name.
     /// </summary>
-    Task<GalleryTag?> GetTagByNameAsync(string name, CancellationToken ct = default);
+    Task<GalleryTag?> GetTagByNameAsync(
+        string name,
+        CancellationToken ct = default);
 
     /// <summary>
-    /// Adds a new tag.
+    /// Adds a gallery tag.
     /// </summary>
-    Task AddTagAsync(GalleryTag tag, CancellationToken ct = default);
+    Task AddTagAsync(
+        GalleryTag tag,
+        CancellationToken ct = default);
 
     // ==================== Unit of Work ====================
 
     /// <summary>
-    /// Persists all pending changes to the database.
-    /// Should be called once per request/transaction.
+    /// Persists pending gallery changes.
     /// </summary>
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
+    Task<int> SaveChangesAsync(
+        CancellationToken ct = default);
 }

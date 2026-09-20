@@ -1,9 +1,0 @@
-PS C:\Projects\WebDocs\RccgHopeHouse\src\RccgHopeHouse.Api> dotnet user-secrets list
-YouTube:ApiKey = your-real-youtube-api-key
-SeedData:AdminPassword = Emypat04me#@!&_0lH4l0v3
-SeedData:AdminEmail = admin@rccghopehouse.org.uk
-Jwt:Key = youHavet0b3@5t4ff7oAcc3s5tHis5#v!64Db3nEf1T0~
-EmailSettings:Username = enobong.adahada@gmail.com
-EmailSettings:Password = Emypat04me#@!&_0lH4l0v3
-ConnectionStrings:DefaultConnection = Server=localhost;Database=RCCGHopeHouseDb;User Id=sa;Password=Emypat04me#@;MultipleActiveResultSets=true;Integrated Security=False;Encrypt=False;
-PS C:\Projects\WebDocs\RccgHopeHouse\src\RccgHopeHouse.Api>

@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceBroadcastRepository, ServiceBroadcastRepository>();
         services.AddScoped<IGivingTypeRepository, GivingTypeRepository>();
         services.AddScoped<IOfferingRepository, OfferingRepository>();
+        services.AddScoped<IGalleryCategoryRepository, GalleryCategoryRepository>();
 
 
         // 5. Service Implementations

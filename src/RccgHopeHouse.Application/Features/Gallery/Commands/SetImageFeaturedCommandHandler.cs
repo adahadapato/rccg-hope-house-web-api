@@ -6,26 +6,61 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.Gallery.Commands;
 
-public class SetImageFeaturedCommandHandler : IRequestHandler<SetImageFeaturedCommand, GalleryImageDto>
+public class SetImageFeaturedCommandHandler
+    : IRequestHandler<SetImageFeaturedCommand, GalleryImageDto>
 {
     private readonly IGalleryRepository _repository;
+    private readonly IGalleryCategoryRepository _categoryRepository;
 
-    public SetImageFeaturedCommandHandler(IGalleryRepository repository) => _repository = repository;
-
-    public async Task<GalleryImageDto> Handle(SetImageFeaturedCommand request, CancellationToken ct)
+    public SetImageFeaturedCommandHandler(
+        IGalleryRepository repository,
+        IGalleryCategoryRepository categoryRepository)
     {
-        var image = await _repository.GetImageByIdAsync(request.Id, true, ct)
-            ?? throw new NotFoundException(nameof(GalleryImage), request.Id);
+        _repository = repository;
+        _categoryRepository = categoryRepository;
+    }
+
+    public async Task<GalleryImageDto> Handle(
+        SetImageFeaturedCommand request,
+        CancellationToken ct)
+    {
+        var image = await _repository.GetImageByIdAsync(
+            request.Id,
+            true,
+            ct)
+            ?? throw new NotFoundException(
+                nameof(GalleryImage),
+                request.Id);
 
         image.SetFeatured(request.IsFeatured);
+
         await _repository.UpdateImageAsync(image, ct);
         await _repository.SaveChangesAsync(ct);
 
-        var category = await _repository.GetCategoryByIdAsync(image.CategoryId, ct);
+        var category = await _categoryRepository.GetByIdAsync(
+            image.CategoryId,
+            ct);
+
         return new GalleryImageDto(
-            image.Id, image.Title, image.Description, image.ImageData, image.ThumbnailData,
-            image.ContentType, image.AltText, image.CategoryId, category?.Name ?? "Uncategorized",
-            Array.Empty<string>(), image.FileSizeBytes, image.Width, image.Height, image.DisplayOrder,
-            image.IsFeatured, image.IsPublic, image.EventDate, image.Photographer, image.ViewCount, image.CreatedAt);
+            image.Id,
+            image.Title,
+            image.Description,
+            image.ImageData,
+            image.ThumbnailData,
+            image.ContentType,
+            image.AltText,
+            image.CategoryId,
+            category?.Name ?? "Uncategorized",
+            Array.Empty<string>(),
+            image.FileSizeBytes,
+            image.Width,
+            image.Height,
+            image.DisplayOrder,
+            image.IsFeatured,
+            image.IsPublic,
+            image.EventDate,
+            image.Photographer,
+            image.ViewCount,
+            image.CreatedAt);
     }
 }
