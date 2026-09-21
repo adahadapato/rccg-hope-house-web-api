@@ -7,6 +7,7 @@ using Microsoft.Extensions.Http;
 using RccgHopeHouse.Application;
 using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Interfaces;
+using RccgHopeHouse.Infrastructure.Bible;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories;
@@ -103,7 +104,41 @@ public static class DependencyInjection
         services.AddSingleton(new NotificationSettings(
             configuration["EmailSettings:AdminContactEmail"] ?? "admin@rccghopehouse.org.uk",
             configuration["EmailSettings:AdminContactName"] ?? "RCCG Hope House Team",
-            configuration["AppSettings:AdminDashboardUrl"] ?? "https://localhost:7153/admin")); 
+            configuration["AppSettings:AdminDashboardUrl"] ?? "https://localhost:7153/admin"));
+
+
+        // YouTube API
+        services.AddHttpClient<IYouTubeService, YouTubeService>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.googleapis.com/youtube/v3/");
+            client.DefaultRequestHeaders.Add(
+                "User-Agent",
+                "RCCG-HopeHouse-Website/1.0");
+        });
+
+        // API.Bible configuration
+        services.Configure<ApiBibleOptions>(
+            configuration.GetSection(ApiBibleOptions.SectionName));
+
+        // API.Bible HTTP client
+        services.AddHttpClient<IApiBibleService, ApiBibleService>(
+            (serviceProvider, client) =>
+            {
+                var options = serviceProvider
+            .GetRequiredService<
+                Microsoft.Extensions.Options.IOptions<ApiBibleOptions>>()
+            .Value;
+
+                client.BaseAddress = new Uri(options.BaseUrl);
+
+                client.DefaultRequestHeaders.Add(
+            "api-key",
+            options.ApiKey);
+
+                client.DefaultRequestHeaders.Add(
+            "User-Agent",
+            "RCCG-HopeHouse-Website/1.0");
+            });
 
         return services;
     }

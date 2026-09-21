@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Api;
 using RccgHopeHouse.Api.Endpoints.Auth;
+using RccgHopeHouse.Api.Endpoints.Bibles;
 using RccgHopeHouse.Api.Endpoints.ChurchInfo;
 using RccgHopeHouse.Api.Endpoints.ChurchServices;
 using RccgHopeHouse.Api.Endpoints.ContactUs;
@@ -66,6 +67,7 @@ api.MapMemberEndpoints();
 api.MapServiceBroadcastEndpoints();
 api.MapGivingTypeEndpoints();
 api.MapOfferingEndpoints();
+api.MapApiBibleEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .ExcludeFromDescription();
