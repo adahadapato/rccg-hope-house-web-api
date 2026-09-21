@@ -17,8 +17,17 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # ============================================================
+      # SOURCE
+      # ============================================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+
+      # ============================================================
+      # .NET SETUP
+      # ============================================================
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
@@ -28,11 +37,21 @@ jobs:
       - name: Display .NET information
         run: dotnet --info
 
+
+      # ============================================================
+      # RESTORE AND BUILD
+      # ============================================================
+
       - name: Restore dependencies
         run: dotnet restore RccgHopeHouse.sln
 
       - name: Build solution
         run: dotnet build RccgHopeHouse.sln --configuration Release --no-restore
+
+
+      # ============================================================
+      # PUBLISH
+      # ============================================================
 
       - name: Publish production API
         run: >
@@ -42,12 +61,76 @@ jobs:
           --self-contained true
           --output ./publish
 
+
+      # ============================================================
+      # BUILD ARTIFACT
+      #
+      # IMPORTANT:
+      # Upload the artifact BEFORE injecting production secrets.
+      # This prevents the API.Bible key from being stored inside
+      # the GitHub Actions artifact.
+      # ============================================================
+
       - name: Upload production artifact
         uses: actions/upload-artifact@v4
         with:
           name: rccg-hope-house-api
           path: ./publish
           if-no-files-found: error
+
+
+      # ============================================================
+      # PRODUCTION CONFIGURATION
+      #
+      # API.Bible authentication is configured locally using
+      # .NET User Secrets. User Secrets are not deployed.
+      #
+      # In production the API key is supplied securely through
+      # the API_BIBLE_KEY GitHub Actions repository secret.
+      #
+      # This step runs AFTER artifact upload so the GitHub artifact
+      # remains free of production secrets.
+      #
+      # This step is skipped for pull requests because pull requests
+      # are build/test operations and are not deployed.
+      # ============================================================
+
+      - name: Configure API.Bible production key
+        if: github.event_name != 'pull_request'
+        shell: powershell
+        env:
+          API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
+        run: |
+          $configPath = ".\publish\appsettings.json"
+
+          if (-not (Test-Path $configPath)) {
+              throw "Published appsettings.json was not found at: $configPath"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:API_BIBLE_KEY)) {
+              throw "API_BIBLE_KEY GitHub secret is not configured."
+          }
+
+          Write-Host "Applying API.Bible production configuration..."
+
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json
+
+          if ($null -eq $config.ApiBible) {
+              throw "ApiBible configuration section was not found in appsettings.json."
+          }
+
+          $config.ApiBible.ApiKey = $env:API_BIBLE_KEY
+
+          $config |
+              ConvertTo-Json -Depth 100 |
+              Set-Content $configPath -Encoding UTF8
+
+          Write-Host "API.Bible production configuration applied successfully."
+
+
+      # ============================================================
+      # DEPLOY TO SMARTERASP.NET
+      # ============================================================
 
       - name: Deploy API to SmarterASP.NET
         if: github.event_name != 'pull_request'
