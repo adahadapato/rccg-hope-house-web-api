@@ -3,7 +3,11 @@
 namespace RccgHopeHouse.Core.Interfaces;
 
 /// <summary>
-/// Repository interface for gallery image and tag operations.
+/// Repository interface for gallery image and tag persistence.
+///
+/// Physical gallery files are handled separately by
+/// <see cref="IGalleryImageStorage"/>.
+///
 /// Gallery category operations are handled separately by
 /// <see cref="IGalleryCategoryRepository"/>.
 /// </summary>
@@ -12,7 +16,7 @@ public interface IGalleryRepository
     // ==================== Images ====================
 
     /// <summary>
-    /// Retrieves paginated images with optional filtering.
+    /// Retrieves paginated gallery images with optional filtering.
     /// </summary>
     Task<IReadOnlyList<GalleryImage>> GetImagesAsync(
         Guid? categoryId = null,
@@ -24,7 +28,8 @@ public interface IGalleryRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the number of images matching the supplied filters.
+    /// Gets the number of gallery images matching the
+    /// supplied filters.
     /// </summary>
     Task<int> GetImagesCountAsync(
         Guid? categoryId = null,
@@ -39,20 +44,6 @@ public interface IGalleryRepository
     Task<GalleryImage?> GetImageByIdAsync(
         Guid id,
         bool includeTags = false,
-        CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets the full binary image data for an image.
-    /// </summary>
-    Task<byte[]?> GetImageDataAsync(
-        Guid id,
-        CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets thumbnail binary data for an image.
-    /// </summary>
-    Task<byte[]?> GetThumbnailDataAsync(
-        Guid id,
         CancellationToken ct = default);
 
     /// <summary>

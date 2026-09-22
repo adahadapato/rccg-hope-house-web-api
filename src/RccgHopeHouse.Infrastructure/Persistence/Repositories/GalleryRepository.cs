@@ -6,7 +6,10 @@ namespace RccgHopeHouse.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// EF Core implementation of <see cref="IGalleryRepository"/>.
-/// Handles gallery images and tags.
+///
+/// Handles gallery image metadata and tags stored in SQL Server.
+/// Physical image files are handled separately through
+/// <see cref="IGalleryImageStorage"/>.
 ///
 /// Gallery category persistence is handled separately by
 /// <see cref="IGalleryCategoryRepository"/>.
@@ -15,8 +18,11 @@ public class GalleryRepository : IGalleryRepository
 {
     private readonly ApplicationDbContext _context;
 
-    public GalleryRepository(ApplicationDbContext context) =>
+    public GalleryRepository(
+        ApplicationDbContext context)
+    {
         _context = context;
+    }
 
     // ==================== Images ====================
 
@@ -32,38 +38,50 @@ public class GalleryRepository : IGalleryRepository
     {
         var query = _context.GalleryImages
             .AsNoTracking()
-            .Include(i => i.Category)
-            .Include(i => i.Tags)
-                .ThenInclude(t => t.Tag)
+            .Include(image => image.Category)
+            .Include(image => image.Tags)
+                .ThenInclude(imageTag => imageTag.Tag)
             .AsQueryable();
 
         if (publicOnly)
         {
-            query = query.Where(i => i.IsPublic);
+            query = query.Where(
+                image => image.IsPublic);
         }
 
         if (categoryId.HasValue)
         {
             query = query.Where(
-                i => i.CategoryId == categoryId.Value);
+                image =>
+                    image.CategoryId ==
+                    categoryId.Value);
         }
 
         if (tagId.HasValue)
         {
             query = query.Where(
-                i => i.Tags.Any(t => t.TagId == tagId.Value));
+                image =>
+                    image.Tags.Any(
+                        imageTag =>
+                            imageTag.TagId ==
+                            tagId.Value));
         }
 
         if (isFeatured.HasValue)
         {
             query = query.Where(
-                i => i.IsFeatured == isFeatured.Value);
+                image =>
+                    image.IsFeatured ==
+                    isFeatured.Value);
         }
 
         return await query
-            .OrderByDescending(i => i.IsFeatured)
-            .ThenByDescending(i => i.EventDate)
-            .ThenBy(i => i.DisplayOrder)
+            .OrderByDescending(
+                image => image.IsFeatured)
+            .ThenByDescending(
+                image => image.EventDate)
+            .ThenBy(
+                image => image.DisplayOrder)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);
@@ -83,105 +101,162 @@ public class GalleryRepository : IGalleryRepository
 
         if (publicOnly)
         {
-            query = query.Where(i => i.IsPublic);
+            query = query.Where(
+                image => image.IsPublic);
         }
 
         if (categoryId.HasValue)
         {
             query = query.Where(
-                i => i.CategoryId == categoryId.Value);
+                image =>
+                    image.CategoryId ==
+                    categoryId.Value);
         }
 
         if (tagId.HasValue)
         {
             query = query.Where(
-                i => i.Tags.Any(t => t.TagId == tagId.Value));
+                image =>
+                    image.Tags.Any(
+                        imageTag =>
+                            imageTag.TagId ==
+                            tagId.Value));
         }
 
         if (isFeatured.HasValue)
         {
             query = query.Where(
-                i => i.IsFeatured == isFeatured.Value);
+                image =>
+                    image.IsFeatured ==
+                    isFeatured.Value);
         }
 
         return await query.CountAsync(ct);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Returns a tracked gallery image.
+    ///
+    /// Gallery images returned by this method are used by both
+    /// query and command handlers. Keeping this entity tracked
+    /// allows command handlers to modify the aggregate directly
+    /// without reattaching the complete Category/Tag graph.
+    ///
+    /// Query handlers remain safe because they do not modify the
+    /// returned entity unless their behaviour intentionally
+    /// requires persistence, such as incrementing ViewCount.
+    /// </summary>
     public async Task<GalleryImage?> GetImageByIdAsync(
         Guid id,
         bool includeTags = false,
         CancellationToken ct = default)
     {
-        IQueryable<GalleryImage> query = _context.GalleryImages
-            .AsNoTracking()
-            .Include(i => i.Category);
+        IQueryable<GalleryImage> query =
+            _context.GalleryImages
+                .Include(image => image.Category);
 
         if (includeTags)
         {
             query = query
-                .Include(i => i.Tags)
-                .ThenInclude(t => t.Tag);
+                .Include(image => image.Tags)
+                .ThenInclude(imageTag => imageTag.Tag);
         }
 
-        return await query
-            .FirstOrDefaultAsync(i => i.Id == id, ct);
+        return await query.FirstOrDefaultAsync(
+            image => image.Id == id,
+            ct);
     }
 
     /// <inheritdoc />
-    public async Task<byte[]?> GetImageDataAsync(
-        Guid id,
-        CancellationToken ct = default) =>
-        await _context.GalleryImages
+    public async Task<IReadOnlyList<GalleryImage>>
+        GetFeaturedImagesAsync(
+            int count = 10,
+            CancellationToken ct = default)
+    {
+        return await _context.GalleryImages
             .AsNoTracking()
-            .Where(i => i.Id == id)
-            .Select(i => i.ImageData)
-            .FirstOrDefaultAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<byte[]?> GetThumbnailDataAsync(
-        Guid id,
-        CancellationToken ct = default) =>
-        await _context.GalleryImages
-            .AsNoTracking()
-            .Where(i => i.Id == id)
-            .Select(i => i.ThumbnailData)
-            .FirstOrDefaultAsync(ct);
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<GalleryImage>> GetFeaturedImagesAsync(
-        int count = 10,
-        CancellationToken ct = default) =>
-        await _context.GalleryImages
-            .AsNoTracking()
-            .Where(i => i.IsFeatured && i.IsPublic)
-            .OrderByDescending(i => i.EventDate)
+            .Include(image => image.Category)
+            .Include(image => image.Tags)
+                .ThenInclude(imageTag => imageTag.Tag)
+            .Where(
+                image =>
+                    image.IsFeatured &&
+                    image.IsPublic)
+            .OrderByDescending(
+                image => image.EventDate)
+            .ThenBy(
+                image => image.DisplayOrder)
             .Take(count)
             .ToListAsync(ct);
+    }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<GalleryImage>> GetRecentImagesAsync(
-        int count = 20,
-        CancellationToken ct = default) =>
-        await _context.GalleryImages
+    public async Task<IReadOnlyList<GalleryImage>>
+        GetRecentImagesAsync(
+            int count = 20,
+            CancellationToken ct = default)
+    {
+        return await _context.GalleryImages
             .AsNoTracking()
-            .Where(i => i.IsPublic)
-            .OrderByDescending(i => i.CreatedAt)
+            .Include(image => image.Category)
+            .Include(image => image.Tags)
+                .ThenInclude(imageTag => imageTag.Tag)
+            .Where(
+                image => image.IsPublic)
+            .OrderByDescending(
+                image => image.CreatedAt)
             .Take(count)
             .ToListAsync(ct);
+    }
 
     /// <inheritdoc />
     public async Task AddImageAsync(
         GalleryImage image,
-        CancellationToken ct = default) =>
-        await _context.GalleryImages.AddAsync(image, ct);
+        CancellationToken ct = default)
+    {
+        await _context.GalleryImages.AddAsync(
+            image,
+            ct);
+    }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gallery images loaded through GetImageByIdAsync are already
+    /// tracked by this DbContext. No call to DbSet.Update is needed.
+    ///
+    /// Calling Update on the complete aggregate would attempt to
+    /// attach its Category and Tag navigation objects again and can
+    /// cause duplicate entity tracking conflicts.
+    /// </summary>
     public Task UpdateImageAsync(
         GalleryImage image,
         CancellationToken ct = default)
     {
-        _context.GalleryImages.Update(image);
+        ct.ThrowIfCancellationRequested();
+
+        var entry =
+            _context.Entry(image);
+
+        if (entry.State ==
+            EntityState.Detached)
+        {
+            /*
+             * Defensive fallback.
+             *
+             * Normal command flow loads images through
+             * GetImageByIdAsync, so this should rarely be needed.
+             * Attach only the image itself rather than calling
+             * DbSet.Update on the complete object graph.
+             */
+            _context.GalleryImages.Attach(
+                image);
+
+            entry =
+                _context.Entry(image);
+
+            entry.State =
+                EntityState.Modified;
+        }
+
         return Task.CompletedTask;
     }
 
@@ -190,40 +265,84 @@ public class GalleryRepository : IGalleryRepository
         GalleryImage image,
         CancellationToken ct = default)
     {
-        _context.GalleryImages.Remove(image);
+        ct.ThrowIfCancellationRequested();
+
+        var entry =
+            _context.Entry(image);
+
+        if (entry.State ==
+            EntityState.Detached)
+        {
+            _context.GalleryImages.Attach(
+                image);
+        }
+
+        _context.GalleryImages.Remove(
+            image);
+
         return Task.CompletedTask;
     }
 
     // ==================== Tags ====================
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<GalleryTag>> GetAllTagsAsync(
-        CancellationToken ct = default) =>
-        await _context.GalleryTags
+    public async Task<IReadOnlyList<GalleryTag>>
+        GetAllTagsAsync(
+            CancellationToken ct = default)
+    {
+        return await _context.GalleryTags
             .AsNoTracking()
-            .OrderBy(t => t.Name)
+            .OrderBy(tag => tag.Name)
             .ToListAsync(ct);
+    }
 
     /// <inheritdoc />
     public async Task<GalleryTag?> GetTagByNameAsync(
         string name,
-        CancellationToken ct = default) =>
-        await _context.GalleryTags
-            .AsNoTracking()
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var normalizedName =
+            name.Trim().ToLowerInvariant();
+
+        /*
+         * Do not use AsNoTracking here.
+         *
+         * During image editing, existing tags may already be
+         * tracked because GetImageByIdAsync includes the image's
+         * tag graph. EF Core's identity resolution will therefore
+         * return the existing tracked GalleryTag instance instead
+         * of creating a second instance with the same key.
+         */
+        return await _context.GalleryTags
             .FirstOrDefaultAsync(
-                t => t.Name == name.ToLowerInvariant(),
+                tag =>
+                    tag.Name.ToLower() ==
+                    normalizedName,
                 ct);
+    }
 
     /// <inheritdoc />
     public async Task AddTagAsync(
         GalleryTag tag,
-        CancellationToken ct = default) =>
-        await _context.GalleryTags.AddAsync(tag, ct);
+        CancellationToken ct = default)
+    {
+        await _context.GalleryTags.AddAsync(
+            tag,
+            ct);
+    }
 
     // ==================== Unit of Work ====================
 
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(
-        CancellationToken ct = default) =>
-        await _context.SaveChangesAsync(ct);
+        CancellationToken ct = default)
+    {
+        return await _context.SaveChangesAsync(
+            ct);
+    }
 }

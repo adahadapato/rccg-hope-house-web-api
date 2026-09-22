@@ -34,4 +34,8 @@
     <ProjectReference Include="..\RccgHopeHouse.Infrastructure\RccgHopeHouse.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\gallery\" />
+  </ItemGroup>
+
 </Project>

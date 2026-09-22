@@ -1,15 +1,15 @@
 ﻿using MediatR;
 using RccgHopeHouse.Application.Features.Auth.Dtos;
-using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
-using RccgHopeHouse.Core.Results;
 
 namespace RccgHopeHouse.Application.Features.Auth.Commands;
 
 /// <summary>
-/// Handles user login, validates credentials via IAuthService, and maps to AuthTokensDto.
+/// Handles user login, validates credentials via IAuthService,
+/// and maps the authentication result to AuthTokensDto.
 /// </summary>
-public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthTokensDto>
+public class LoginCommandHandler
+    : IRequestHandler<LoginCommand, AuthTokensDto>
 {
     private readonly IAuthService _authService;
 
@@ -19,17 +19,25 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthTokensDto>
     }
 
     /// <summary>
-    /// Authenticates the user and returns JWT tokens.
+    /// Authenticates the user and returns JWT tokens
+    /// together with authenticated user information.
     /// Throws UnauthorizedAccessException on failure.
     /// </summary>
     public async Task<AuthTokensDto> Handle(
         LoginCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await _authService.LoginAsync(request.Email, request.Password, cancellationToken);
+        var result = await _authService.LoginAsync(
+            request.Email,
+            request.Password,
+            cancellationToken);
 
         if (!result.IsSuccess)
-            throw new UnauthorizedAccessException(result.ErrorMessage ?? "Invalid email or password.");
+        {
+            throw new UnauthorizedAccessException(
+                result.ErrorMessage ??
+                "Invalid email or password.");
+        }
 
         // Map Core AuthResult → Application DTO
         return new AuthTokensDto(
@@ -37,6 +45,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthTokensDto>
             result.RefreshToken ?? string.Empty,
             result.ExpiresAt ?? DateTime.MinValue,
             result.Role ?? string.Empty,
-            result.UserName ?? string.Empty);
+            result.UserName ?? string.Empty,
+            result.Name ?? string.Empty,
+            result.Email ?? string.Empty);
     }
 }

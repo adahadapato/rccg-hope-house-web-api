@@ -130,6 +130,23 @@ jobs:
 
       # ============================================================
       # DEPLOY TO SMARTERASP.NET
+      #
+      # IMPORTANT:
+      # wwwroot/uploads/gallery contains runtime user uploads.
+      #
+      # These files are NOT deployment artifacts and must survive
+      # future deployments.
+      #
+      # Protection is provided in two ways:
+      #
+      # 1. DoNotDeleteRule prevents MSDeploy from deleting files
+      #    simply because they are absent from the publish package.
+      #
+      # 2. The explicit skip rule excludes the gallery upload tree
+      #    from deployment synchronisation altogether.
+      #
+      # The application itself remains responsible for creating,
+      # replacing and deleting gallery images at runtime.
       # ============================================================
 
       - name: Deploy API to SmarterASP.NET
@@ -152,6 +169,7 @@ jobs:
           Write-Host "Deploying RCCG Hope House API..."
           Write-Host "Site: $env:SMARTERASP_SITE_NAME"
           Write-Host "Source: $sourcePath"
+          Write-Host "Gallery runtime uploads will be preserved."
 
           & $msdeploy `
             -verb:sync `
@@ -163,6 +181,8 @@ jobs:
             -disableLink:CertificateExtension `
             -enableRule:AppOffline `
             -enableRule:DoNotDeleteRule `
+            -skip:objectName=filePath,absolutePath=".*\\wwwroot\\uploads\\gallery\\.*" `
+            -skip:objectName=dirPath,absolutePath=".*\\wwwroot\\uploads\\gallery($|\\.*)" `
             -verbose
 
           if ($LASTEXITCODE -ne 0) {

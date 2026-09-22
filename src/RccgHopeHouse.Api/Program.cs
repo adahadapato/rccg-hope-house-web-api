@@ -20,6 +20,20 @@ using RccgHopeHouse.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ==================== Gallery File Storage ====================
+//
+// Use ASP.NET Core's actual web-root path rather than relying on
+// AppContext.BaseDirectory.
+//
+// This ensures that local development writes gallery files into:
+//
+// src/RccgHopeHouse.Api/wwwroot/uploads/gallery
+//
+// and that published deployments use the web root belonging to
+// the deployed API application.
+builder.Configuration["GalleryStorage:WebRootPath"] =
+    builder.Environment.WebRootPath;
+
 // ==================== Single Composition Root ====================
 builder.Services.AddApi(builder.Configuration);
 
@@ -29,15 +43,25 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+
     app.UseSwagger();
+
     app.UseSwaggerUI(c =>
     {
-        c.InjectJavascript("https://code.jquery.com/jquery-3.6.0.min.js");
-        c.SwaggerEndpoint("v1/swagger.json", "RCCG Hope House API v1");
+        c.InjectJavascript(
+            "https://code.jquery.com/jquery-3.6.0.min.js");
+
+        c.SwaggerEndpoint(
+            "v1/swagger.json",
+            "RCCG Hope House API v1");
+
         c.RoutePrefix = "swagger";
     });
 
-    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+    app.MapGet(
+            "/",
+            () => Results.Redirect("/swagger"))
+        .ExcludeFromDescription();
 }
 else
 {
@@ -46,13 +70,33 @@ else
 }
 
 app.UseRateLimiter();
+
 app.UseHttpsRedirection();
+
+// ==================== Static Files ====================
+//
+// Gallery photographs and generated thumbnails are stored beneath:
+//
+// wwwroot/uploads/gallery
+//
+// UseStaticFiles exposes files beneath wwwroot using their
+// application-relative paths, for example:
+//
+// /uploads/gallery/2026/09/abc123.webp
+//
+// The gallery API stores only these paths and image metadata
+// in SQL Server.
+app.UseStaticFiles();
+
 app.UseCors("AllowClients");
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 // ==================== Endpoint Registration ====================
-var api = app.MapGroup("/api");
+var api =
+    app.MapGroup("/api");
 
 api.MapAuthEndpoints();
 api.MapPastorPostEndpoints();
@@ -69,20 +113,42 @@ api.MapGivingTypeEndpoints();
 api.MapOfferingEndpoints();
 api.MapApiBibleEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
-   .ExcludeFromDescription();
+app.MapGet(
+        "/health",
+        () => Results.Ok(
+            new
+            {
+                status = "healthy",
+                timestamp = DateTime.UtcNow
+            }))
+    .ExcludeFromDescription();
 
 // ==================== Database Seeding ====================
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var db =
+        scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
 
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager =
+        scope.ServiceProvider
+            .GetRequiredService<
+                UserManager<ApplicationUser>>();
 
-    await db.Database.MigrateAsync();           // applies any pending migrations
-    await RccgHopeHouse.Infrastructure.Persistence.Seeding.DbSeeder.SeedAsync(
-        db, userManager, roleManager, app.Configuration);
+    var roleManager =
+        scope.ServiceProvider
+            .GetRequiredService<
+                RoleManager<IdentityRole>>();
+
+    // Applies any pending EF Core migrations.
+    await db.Database.MigrateAsync();
+
+    await RccgHopeHouse.Infrastructure.Persistence.Seeding
+        .DbSeeder.SeedAsync(
+            db,
+            userManager,
+            roleManager,
+            app.Configuration);
 }
 
 app.Run();

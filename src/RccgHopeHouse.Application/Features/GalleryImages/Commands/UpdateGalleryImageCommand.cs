@@ -4,7 +4,10 @@ using RccgHopeHouse.Application.Features.Gallery.Dtos;
 namespace RccgHopeHouse.Application.Features.Gallery.Commands;
 
 /// <summary>
-/// Command to update gallery image metadata or replace binary data.
+/// Command to update gallery image metadata and optionally
+/// replace the stored physical image.
+///
+/// Category, tags and display order can also be changed.
 /// </summary>
 public record UpdateGalleryImageCommand(
     Guid Id,
@@ -14,4 +17,8 @@ public record UpdateGalleryImageCommand(
     string? Photographer,
     byte[]? NewImageData,
     string? NewContentType,
-    DateTime? EventDate) : IRequest<GalleryImageDto>;
+    DateTime? EventDate,
+    Guid CategoryId,
+    List<string>? Tags,
+    int DisplayOrder)
+    : IRequest<GalleryImageDto>;

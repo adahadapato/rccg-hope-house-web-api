@@ -1,14 +1,15 @@
 ﻿namespace RccgHopeHouse.Application.Features.Gallery.Dtos;
 
 /// <summary>
-/// Lightweight DTO for public gallery grid/list views.
-/// Excludes heavy full-resolution binary data to optimize bandwidth and memory.
-/// Only includes thumbnail data, metadata, and category/tag names for filtering.
+/// Lightweight DTO used when displaying the public gallery feed.
+///
+/// The feed uses the generated thumbnail where available,
+/// avoiding transmission of full-size image data.
 /// </summary>
 public record GalleryImageFeedDto(
     Guid Id,
     string Title,
-    byte[]? ThumbnailData,
+    string? ThumbnailPath,
     string ContentType,
     string AltText,
     Guid CategoryId,

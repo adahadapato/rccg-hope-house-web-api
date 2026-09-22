@@ -11,4 +11,6 @@ public record AuthResult(
     DateTime? ExpiresAt,
     string? Role,
     string? ErrorMessage,
-    string? UserName);
+    string? UserName,
+    string? Name,
+    string? Email);

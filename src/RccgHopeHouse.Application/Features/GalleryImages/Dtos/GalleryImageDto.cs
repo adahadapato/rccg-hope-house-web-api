@@ -1,15 +1,19 @@
 ﻿namespace RccgHopeHouse.Application.Features.Gallery.Dtos;
 
 /// <summary>
-/// Detailed DTO for admin views and single-image public requests.
-/// Includes full binary image data, metadata, and tag information.
+/// Detailed gallery image DTO used for admin views
+/// and single-image requests.
+///
+/// Physical image files are stored outside SQL Server.
+/// ImagePath and ThumbnailPath identify the corresponding
+/// files served by the application.
 /// </summary>
 public record GalleryImageDto(
     Guid Id,
     string Title,
     string? Description,
-    byte[] ImageData,
-    byte[]? ThumbnailData,
+    string ImagePath,
+    string? ThumbnailPath,
     string ContentType,
     string AltText,
     Guid CategoryId,

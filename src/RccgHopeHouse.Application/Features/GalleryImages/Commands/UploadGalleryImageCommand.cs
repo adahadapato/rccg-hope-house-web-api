@@ -5,7 +5,9 @@ namespace RccgHopeHouse.Application.Features.Gallery.Commands;
 
 /// <summary>
 /// Command to upload a new gallery image.
-/// Accepts binary data, generates thumbnails server-side (via Infrastructure), and persists metadata.
+///
+/// The uploaded binary data is processed by Infrastructure,
+/// while SQL Server stores the resulting paths and metadata.
 /// </summary>
 public record UploadGalleryImageCommand(
     byte[] ImageData,
@@ -16,4 +18,6 @@ public record UploadGalleryImageCommand(
     string? Description,
     DateTime? EventDate,
     string? Photographer,
-    List<string>? Tags) : IRequest<GalleryImageDto>;
+    List<string>? Tags,
+    int DisplayOrder = 0)
+    : IRequest<GalleryImageDto>;

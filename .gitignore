@@ -34,3 +34,7 @@ AppSettings-keep.txt
 # Separate repositories
 RccgHopeHouse.Mobile/
 RccgHopeHouse.Web/
+
+# Runtime gallery uploads
+src/RccgHopeHouse.Api/wwwroot/uploads/gallery/*
+!src/RccgHopeHouse.Api/wwwroot/uploads/gallery/.gitkeep

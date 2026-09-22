@@ -4,15 +4,15 @@ using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
 
-namespace RccgHopeHouse.Application.Features.Gallery.Commands;
+namespace RccgHopeHouse.Application.Features.Gallery.Queries;
 
-public class UpdateGalleryImageCommandHandler
-    : IRequestHandler<UpdateGalleryImageCommand, GalleryImageDto>
+public class GetGalleryImageByIdQueryHandler
+    : IRequestHandler<GetGalleryImageByIdQuery, GalleryImageDto>
 {
     private readonly IGalleryRepository _repository;
     private readonly IGalleryCategoryRepository _categoryRepository;
 
-    public UpdateGalleryImageCommandHandler(
+    public GetGalleryImageByIdQueryHandler(
         IGalleryRepository repository,
         IGalleryCategoryRepository categoryRepository)
     {
@@ -21,7 +21,7 @@ public class UpdateGalleryImageCommandHandler
     }
 
     public async Task<GalleryImageDto> Handle(
-        UpdateGalleryImageCommand request,
+        GetGalleryImageByIdQuery request,
         CancellationToken ct)
     {
         var image = await _repository.GetImageByIdAsync(
@@ -32,42 +32,41 @@ public class UpdateGalleryImageCommandHandler
                 nameof(GalleryImage),
                 request.Id);
 
-        image.UpdateMetadata(
-            request.Title,
-            request.Description,
-            request.AltText,
-            request.Photographer);
-
-        if (request.NewImageData is not null &&
-            !string.IsNullOrWhiteSpace(request.NewContentType))
+        if (request.PublicOnly &&
+            !image.IsPublic)
         {
-            image.ReplaceImage(request.NewImageData);
+            throw new NotFoundException(
+                nameof(GalleryImage),
+                request.Id);
         }
 
-        await _repository.UpdateImageAsync(image, ct);
-        await _repository.SaveChangesAsync(ct);
+        image.IncrementViewCount();
 
-        return await MapToDetailDtoAsync(image, ct);
-    }
-
-    private async Task<GalleryImageDto> MapToDetailDtoAsync(
-        GalleryImage image,
-        CancellationToken ct)
-    {
-        var category = await _categoryRepository.GetByIdAsync(
-            image.CategoryId,
+        await _repository.UpdateImageAsync(
+            image,
             ct);
 
+        await _repository.SaveChangesAsync(
+            ct);
+
+        var category =
+            await _categoryRepository.GetByIdAsync(
+                image.CategoryId,
+                ct);
+
         var tagNames = image.Tags
-            .Select(t => t.Tag.Name)
+            .Select(tag => tag.Tag?.Name)
+            .Where(name =>
+                !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
             .ToList();
 
         return new GalleryImageDto(
             image.Id,
             image.Title,
             image.Description,
-            image.ImageData,
-            image.ThumbnailData,
+            image.ImagePath,
+            image.ThumbnailPath,
             image.ContentType,
             image.AltText,
             image.CategoryId,

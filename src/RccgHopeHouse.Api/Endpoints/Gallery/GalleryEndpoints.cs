@@ -6,13 +6,6 @@ using RccgHopeHouse.Application.Features.Gallery.Queries;
 
 namespace RccgHopeHouse.Api.Endpoints.Gallery;
 
-/// <summary>
-/// Minimal API endpoints for the church gallery:
-/// public image feed, tags, image streaming, and admin image management.
-///
-/// Gallery category management is handled separately by
-/// GalleryCategoryEndpoints.
-/// </summary>
 public static class GalleryEndpoints
 {
     public static RouteGroupBuilder MapGalleryEndpoints(
@@ -22,58 +15,48 @@ public static class GalleryEndpoints
             .MapGroup("/gallery")
             .WithTags("Gallery");
 
-        // ==================== Public Endpoints ====================
+        // ==================== Public ====================
 
         gallery.MapGet("/", GetFeedAsync)
             .WithName("GetGalleryFeed")
-            .WithSummary("Get public gallery feed")
-            .WithDescription(
-                "Returns a paginated and filtered list of public gallery images with thumbnails.")
             .Produces<IReadOnlyList<GalleryImageFeedDto>>()
             .AllowAnonymous();
 
         gallery.MapGet("/tags", GetTagsAsync)
             .WithName("GetGalleryTags")
-            .WithSummary("Get gallery tags for filtering")
             .Produces<IReadOnlyList<GalleryTagDto>>()
             .AllowAnonymous();
 
         gallery.MapGet("/{id:guid}", GetByIdAsync)
             .WithName("GetGalleryImageById")
-            .WithSummary("Get a single gallery image by ID")
-            .Produces<GalleryImageDto>(StatusCodes.Status200OK)
+            .Produces<GalleryImageDto>()
+            .AllowAnonymous();
+
+        gallery.MapGet("/{id:guid}/image", GetImageAsync)
+            .WithName("GetGalleryImage")
+            .Produces(StatusCodes.Status302Found)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .AllowAnonymous();
 
-        gallery.MapGet("/{id:guid}/image", StreamImageAsync)
-            .WithName("StreamGalleryImage")
-            .WithSummary("Stream full gallery image binary data")
-            .Produces<byte[]>(
-                StatusCodes.Status200OK,
-                "image/jpeg")
+        gallery.MapGet("/{id:guid}/thumbnail", GetThumbnailAsync)
+            .WithName("GetGalleryThumbnail")
+            .Produces(StatusCodes.Status302Found)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .AllowAnonymous();
 
-        gallery.MapGet("/{id:guid}/thumbnail", StreamThumbnailAsync)
-            .WithName("StreamGalleryThumbnail")
-            .WithSummary("Stream gallery thumbnail binary data")
-            .Produces<byte[]>(
-                StatusCodes.Status200OK,
-                "image/jpeg")
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .AllowAnonymous();
-
-        // ==================== Admin Endpoints ====================
+        // ==================== Admin ====================
 
         var admin = gallery
             .MapGroup("/admin")
-            .RequireAuthorization("RequireMediaManager");
+            .RequireAuthorization(
+                "RequireMediaManager");
+
+        admin.MapGet("/", GetAdminImagesAsync)
+            .WithName("GetAdminGalleryImages")
+            .Produces<IReadOnlyList<GalleryImageDto>>();
 
         admin.MapPost("/upload", UploadAsync)
             .WithName("UploadGalleryImage")
-            .WithSummary("Upload a new gallery image")
-            .WithDescription(
-                "Accepts multipart/form-data containing an image and its metadata.")
             .Produces<GalleryImageDto>(
                 StatusCodes.Status201Created)
             .ProducesValidationProblem()
@@ -82,38 +65,36 @@ public static class GalleryEndpoints
 
         admin.MapPut("/{id:guid}", UpdateAsync)
             .WithName("UpdateGalleryImage")
-            .WithSummary("Update gallery image metadata or replace the image")
-            .Produces<GalleryImageDto>(
-                StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces<GalleryImageDto>()
+            .ProducesProblem(
+                StatusCodes.Status404NotFound)
             .ProducesValidationProblem()
             .DisableAntiforgery()
             .ExcludeFromDescription();
 
-        admin.MapPost("/{id:guid}/featured", SetFeaturedAsync)
+        admin.MapPost(
+                "/{id:guid}/featured",
+                SetFeaturedAsync)
             .WithName("SetGalleryImageFeatured")
-            .WithSummary("Set the featured status of a gallery image")
-            .Produces<GalleryImageDto>(
-                StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .Produces<GalleryImageDto>();
 
-        admin.MapPost("/{id:guid}/visibility", ToggleVisibilityAsync)
+        admin.MapPost(
+                "/{id:guid}/visibility",
+                ToggleVisibilityAsync)
             .WithName("ToggleGalleryImageVisibility")
-            .WithSummary("Toggle gallery image public/private visibility")
-            .Produces<GalleryImageDto>(
-                StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .Produces<GalleryImageDto>();
 
-        admin.MapDelete("/{id:guid}", DeleteAsync)
+        admin.MapDelete(
+                "/{id:guid}",
+                DeleteAsync)
             .WithName("DeleteGalleryImage")
-            .WithSummary("Permanently delete a gallery image")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .Produces(
+                StatusCodes.Status204NoContent);
 
         return group;
     }
 
-    // ==================== Public Handlers ====================
+    // ==================== Public handlers ====================
 
     private static async Task<IResult> GetFeedAsync(
         [FromQuery] Guid? categoryId,
@@ -124,27 +105,34 @@ public static class GalleryEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        var query = new GetGalleryFeedQuery(
-            categoryId,
-            tagId,
-            isFeatured,
-            skip,
-            take);
+        var query =
+            new GetGalleryFeedQuery(
+                categoryId,
+                tagId,
+                isFeatured,
+                skip,
+                take);
 
-        var images = await mediator.Send(query, ct);
+        var images =
+            await mediator.Send(
+                query,
+                ct);
 
-        return TypedResults.Ok(images);
+        return TypedResults.Ok(
+            images);
     }
 
     private static async Task<IResult> GetTagsAsync(
         IMediator mediator,
         CancellationToken ct)
     {
-        var query = new GetGalleryTagsQuery();
+        var tags =
+            await mediator.Send(
+                new GetGalleryTagsQuery(),
+                ct);
 
-        var tags = await mediator.Send(query, ct);
-
-        return TypedResults.Ok(tags);
+        return TypedResults.Ok(
+            tags);
     }
 
     private static async Task<IResult> GetByIdAsync(
@@ -152,157 +140,240 @@ public static class GalleryEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        var query = new GetGalleryImageByIdQuery(id);
+        var image =
+            await mediator.Send(
+                new GetGalleryImageByIdQuery(
+                    id),
+                ct);
 
-        var image = await mediator.Send(query, ct);
-
-        return TypedResults.Ok(image);
+        return TypedResults.Ok(
+            image);
     }
 
-    private static async Task<IResult> StreamImageAsync(
+    private static async Task<IResult> GetImageAsync(
         Guid id,
         IMediator mediator,
         CancellationToken ct)
     {
-        var query = new GetGalleryImageByIdQuery(id);
+        var image =
+            await mediator.Send(
+                new GetGalleryImageByIdQuery(
+                    id),
+                ct);
 
-        var image = await mediator.Send(query, ct);
-
-        if (image.ImageData is null ||
-            image.ImageData.Length == 0)
+        if (string.IsNullOrWhiteSpace(
+                image.ImagePath))
         {
             return TypedResults.NotFound();
         }
 
-        return TypedResults.File(
-            image.ImageData,
-            image.ContentType,
-            fileDownloadName: $"{image.Title}.jpg");
+        return TypedResults.Redirect(
+            image.ImagePath,
+            permanent: false,
+            preserveMethod: false);
     }
 
-    private static async Task<IResult> StreamThumbnailAsync(
+    private static async Task<IResult> GetThumbnailAsync(
         Guid id,
         IMediator mediator,
         CancellationToken ct)
     {
-        var query = new GetGalleryImageByIdQuery(id);
+        var image =
+            await mediator.Send(
+                new GetGalleryImageByIdQuery(
+                    id),
+                ct);
 
-        var image = await mediator.Send(query, ct);
+        var path =
+            !string.IsNullOrWhiteSpace(
+                image.ThumbnailPath)
+                ? image.ThumbnailPath
+                : image.ImagePath;
 
-        if (image.ImageData is null ||
-            image.ImageData.Length == 0)
+        if (string.IsNullOrWhiteSpace(
+                path))
         {
             return TypedResults.NotFound();
         }
 
-        var thumbnail =
-            image.ThumbnailData ??
-            image.ImageData;
-
-        return TypedResults.File(
-            thumbnail,
-            "image/jpeg",
-            fileDownloadName: $"{image.Title}_thumb.jpg");
+        return TypedResults.Redirect(
+            path,
+            permanent: false,
+            preserveMethod: false);
     }
 
-    // ==================== Admin Handlers ====================
+    // ==================== Admin handlers ====================
 
-    /// <summary>
-    /// Uses a request model with [AsParameters] instead of mixing
-    /// individual IFormFile and scalar [FromForm] parameters.
-    /// </summary>
+    private static async Task<IResult> GetAdminImagesAsync(
+        [FromQuery] Guid? categoryId,
+        [FromQuery] Guid? tagId,
+        [FromQuery] bool? isFeatured,
+        [FromQuery] int skip,
+        [FromQuery] int take,
+        IMediator mediator,
+        CancellationToken ct)
+    {
+        var query =
+            new GetAdminGalleryImagesQuery(
+                categoryId,
+                tagId,
+                isFeatured,
+                skip,
+                take <= 0
+                    ? 100
+                    : take);
+
+        var images =
+            await mediator.Send(
+                query,
+                ct);
+
+        return TypedResults.Ok(
+            images);
+    }
+
     private static async Task<IResult> UploadAsync(
-        [AsParameters] UploadGalleryImageRequest request,
+        [AsParameters]
+        UploadGalleryImageRequest request,
         IMediator mediator,
         CancellationToken ct)
     {
-        if (request.File.Length == 0)
+        if (request.File is null ||
+            request.File.Length == 0)
         {
             return TypedResults.BadRequest(
                 "Image file is required.");
         }
 
-        using var ms = new MemoryStream();
+        using var ms =
+            new MemoryStream();
 
-        await request.File.CopyToAsync(ms, ct);
+        await request.File.CopyToAsync(
+            ms,
+            ct);
 
-        var imageData = ms.ToArray();
+        var tags =
+            ParseTags(
+                request.Tags);
 
-        var tags = string.IsNullOrWhiteSpace(request.Tags)
-            ? null
-            : request.Tags
-                .Split(
-                    ',',
-                    StringSplitOptions.TrimEntries |
-                    StringSplitOptions.RemoveEmptyEntries)
-                .ToList();
+        var command =
+            new UploadGalleryImageCommand(
+                ImageData:
+                    ms.ToArray(),
+                ContentType:
+                    request.File.ContentType,
+                CategoryId:
+                    request.CategoryId,
+                Title:
+                    request.Title,
+                AltText:
+                    request.AltText,
+                Description:
+                    request.Description,
+                EventDate:
+                    request.EventDate,
+                Photographer:
+                    request.Photographer,
+                Tags:
+                    tags,
+                DisplayOrder:
+                    request.DisplayOrder);
 
-        var command = new UploadGalleryImageCommand(
-            imageData,
-            request.File.ContentType,
-            request.CategoryId,
-            request.Title,
-            request.AltText,
-            request.Description,
-            request.EventDate,
-            request.Photographer,
-            tags);
-
-        var result = await mediator.Send(command, ct);
+        var result =
+            await mediator.Send(
+                command,
+                ct);
 
         return TypedResults.CreatedAtRoute(
             result,
             "GetGalleryImageById",
-            new { id = result.Id });
+            new
+            {
+                id = result.Id
+            });
     }
 
     private static async Task<IResult> UpdateAsync(
         Guid id,
-        [AsParameters] UpdateGalleryImageRequest request,
+        [AsParameters]
+        UpdateGalleryImageRequest request,
         IMediator mediator,
         CancellationToken ct)
     {
         byte[]? newImageData = null;
         string? newContentType = null;
 
-        if (request.NewImage?.Length > 0)
+        if (request.NewImage is not null &&
+            request.NewImage.Length > 0)
         {
-            using var ms = new MemoryStream();
+            using var ms =
+                new MemoryStream();
 
-            await request.NewImage.CopyToAsync(ms, ct);
+            await request.NewImage.CopyToAsync(
+                ms,
+                ct);
 
-            newImageData = ms.ToArray();
-            newContentType = request.NewImage.ContentType;
+            newImageData =
+                ms.ToArray();
+
+            newContentType =
+                request.NewImage.ContentType;
         }
 
-        var command = new UpdateGalleryImageCommand(
-            id,
-            request.Title,
-            request.Description,
-            request.AltText,
-            request.Photographer,
-            newImageData,
-            newContentType,
-            request.EventDate);
+        var tags =
+            ParseTags(
+                request.Tags);
 
-        var result = await mediator.Send(command, ct);
+        var command =
+            new UpdateGalleryImageCommand(
+                Id:
+                    id,
+                Title:
+                    request.Title,
+                Description:
+                    request.Description,
+                AltText:
+                    request.AltText,
+                Photographer:
+                    request.Photographer,
+                NewImageData:
+                    newImageData,
+                NewContentType:
+                    newContentType,
+                EventDate:
+                    request.EventDate,
+                CategoryId:
+                    request.CategoryId,
+                Tags:
+                    tags,
+                DisplayOrder:
+                    request.DisplayOrder);
 
-        return TypedResults.Ok(result);
+        var result =
+            await mediator.Send(
+                command,
+                ct);
+
+        return TypedResults.Ok(
+            result);
     }
 
     private static async Task<IResult> SetFeaturedAsync(
         Guid id,
-        [FromBody] SetFeaturedRequest request,
+        [FromBody]
+        SetFeaturedRequest request,
         IMediator mediator,
         CancellationToken ct)
     {
-        var command = new SetImageFeaturedCommand(
-            id,
-            request.IsFeatured);
+        var result =
+            await mediator.Send(
+                new SetImageFeaturedCommand(
+                    id,
+                    request.IsFeatured),
+                ct);
 
-        var result = await mediator.Send(command, ct);
-
-        return TypedResults.Ok(result);
+        return TypedResults.Ok(
+            result);
     }
 
     private static async Task<IResult> ToggleVisibilityAsync(
@@ -310,12 +381,14 @@ public static class GalleryEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        var command =
-            new ToggleImageVisibilityCommand(id);
+        var result =
+            await mediator.Send(
+                new ToggleImageVisibilityCommand(
+                    id),
+                ct);
 
-        var result = await mediator.Send(command, ct);
-
-        return TypedResults.Ok(result);
+        return TypedResults.Ok(
+            result);
     }
 
     private static async Task<IResult> DeleteAsync(
@@ -323,16 +396,33 @@ public static class GalleryEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        var command =
-            new DeleteGalleryImageCommand(id);
-
-        await mediator.Send(command, ct);
+        await mediator.Send(
+            new DeleteGalleryImageCommand(
+                id),
+            ct);
 
         return TypedResults.NoContent();
     }
-}
 
-// ==================== API Request Models ====================
+    private static List<string>? ParseTags(
+        string? rawTags)
+    {
+        if (string.IsNullOrWhiteSpace(
+                rawTags))
+        {
+            return new List<string>();
+        }
+
+        return rawTags
+            .Split(
+                ',',
+                StringSplitOptions.TrimEntries |
+                StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+}
 
 public record SetFeaturedRequest(
     bool IsFeatured);
@@ -340,13 +430,16 @@ public record SetFeaturedRequest(
 public class UploadGalleryImageRequest
 {
     [FromForm]
-    public IFormFile File { get; set; } = null!;
+    public IFormFile File { get; set; } =
+        null!;
 
     [FromForm]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } =
+        string.Empty;
 
     [FromForm]
-    public string AltText { get; set; } = string.Empty;
+    public string AltText { get; set; } =
+        string.Empty;
 
     [FromForm]
     public Guid CategoryId { get; set; }
@@ -360,24 +453,25 @@ public class UploadGalleryImageRequest
     [FromForm]
     public string? Photographer { get; set; }
 
-    /// <summary>
-    /// Comma-separated tag names, for example:
-    /// "easter,youth,2026".
-    /// </summary>
     [FromForm]
     public string? Tags { get; set; }
+
+    [FromForm]
+    public int DisplayOrder { get; set; } = 0;
 }
 
 public class UpdateGalleryImageRequest
 {
     [FromForm]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } =
+        string.Empty;
 
     [FromForm]
     public string? Description { get; set; }
 
     [FromForm]
-    public string AltText { get; set; } = string.Empty;
+    public string AltText { get; set; } =
+        string.Empty;
 
     [FromForm]
     public string? Photographer { get; set; }
@@ -387,4 +481,13 @@ public class UpdateGalleryImageRequest
 
     [FromForm]
     public DateTime? EventDate { get; set; }
+
+    [FromForm]
+    public Guid CategoryId { get; set; }
+
+    [FromForm]
+    public string? Tags { get; set; }
+
+    [FromForm]
+    public int DisplayOrder { get; set; } = 0;
 }

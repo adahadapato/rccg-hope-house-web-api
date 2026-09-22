@@ -6,13 +6,13 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.Gallery.Commands;
 
-public class SetImageFeaturedCommandHandler
-    : IRequestHandler<SetImageFeaturedCommand, GalleryImageDto>
+public class ToggleImageVisibilityCommandHandler
+    : IRequestHandler<ToggleImageVisibilityCommand, GalleryImageDto>
 {
     private readonly IGalleryRepository _repository;
     private readonly IGalleryCategoryRepository _categoryRepository;
 
-    public SetImageFeaturedCommandHandler(
+    public ToggleImageVisibilityCommandHandler(
         IGalleryRepository repository,
         IGalleryCategoryRepository categoryRepository)
     {
@@ -21,37 +21,49 @@ public class SetImageFeaturedCommandHandler
     }
 
     public async Task<GalleryImageDto> Handle(
-        SetImageFeaturedCommand request,
+        ToggleImageVisibilityCommand request,
         CancellationToken ct)
     {
         var image = await _repository.GetImageByIdAsync(
             request.Id,
-            true,
+            includeTags: true,
             ct)
             ?? throw new NotFoundException(
                 nameof(GalleryImage),
                 request.Id);
 
-        image.SetFeatured(request.IsFeatured);
+        image.TogglePublic();
 
-        await _repository.UpdateImageAsync(image, ct);
-        await _repository.SaveChangesAsync(ct);
-
-        var category = await _categoryRepository.GetByIdAsync(
-            image.CategoryId,
+        await _repository.UpdateImageAsync(
+            image,
             ct);
+
+        await _repository.SaveChangesAsync(
+            ct);
+
+        var category =
+            await _categoryRepository.GetByIdAsync(
+                image.CategoryId,
+                ct);
+
+        var tagNames = image.Tags
+            .Select(tag => tag.Tag?.Name)
+            .Where(name =>
+                !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
 
         return new GalleryImageDto(
             image.Id,
             image.Title,
             image.Description,
-            image.ImageData,
-            image.ThumbnailData,
+            image.ImagePath,
+            image.ThumbnailPath,
             image.ContentType,
             image.AltText,
             image.CategoryId,
             category?.Name ?? "Uncategorized",
-            Array.Empty<string>(),
+            tagNames,
             image.FileSizeBytes,
             image.Width,
             image.Height,

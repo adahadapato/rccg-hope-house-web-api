@@ -1,269 +1,360 @@
-﻿namespace RccgHopeHouse.Core.Entities;
+﻿using System.Security.Cryptography;
+
+namespace RccgHopeHouse.Core.Entities;
 
 /// <summary>
-/// Represents a gallery image stored as binary data in the database.
-/// Includes metadata for organization, SEO, and accessibility.
+/// Represents a gallery image whose physical files are stored
+/// outside the database.
+///
+/// The database stores the image paths together with metadata used
+/// for organisation, accessibility, filtering and presentation.
 /// </summary>
 public class GalleryImage : BaseEntity
 {
-    /// <summary>
-    /// Display title for the image (e.g., "Easter Service 2026").
-    /// </summary>
     public string Title { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Optional description or caption for the image.
-    /// </summary>
     public string? Description { get; private set; }
 
-    /// <summary>
-    /// The actual image binary data (JPEG, PNG, WebP, etc.).
-    /// Stored as byte[] for database backup/recovery benefits.
-    /// </summary>
-    public byte[] ImageData { get; private set; } = Array.Empty<byte>();
+    public string ImagePath { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Compressed thumbnail version for fast list views.
-    /// Typically 300x300 pixels or smaller.
-    /// </summary>
-    public byte[]? ThumbnailData { get; private set; }
+    public string? ThumbnailPath { get; private set; }
 
-    /// <summary>
-    /// MIME type of the image (e.g., "image/jpeg", "image/png").
-    /// Required for proper HTTP response headers.
-    /// </summary>
-    public string ContentType { get; private set; } = "image/jpeg";
+    public string ContentType { get; private set; } = "image/webp";
 
-    /// <summary>
-    /// Alternative text for accessibility and SEO.
-    /// Describes the image content for screen readers.
-    /// </summary>
     public string AltText { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Foreign key to the gallery category (e.g., Services, Events).
-    /// </summary>
     public Guid CategoryId { get; private set; }
 
-    /// <summary>
-    /// Navigation property to the parent category.
-    /// </summary>
     public GalleryCategory Category { get; private set; } = null!;
 
-    /// <summary>
-    /// Many-to-many relationship with tags for flexible filtering.
-    /// </summary>
-    public ICollection<GalleryImageTag> Tags { get; private set; } = new List<GalleryImageTag>();
+    public ICollection<GalleryImageTag> Tags { get; private set; }
+        = new List<GalleryImageTag>();
 
-    /// <summary>
-    /// Original file size in bytes (before compression).
-    /// Used for display and validation.
-    /// </summary>
     public int FileSizeBytes { get; private set; }
 
-    /// <summary>
-    /// Image width in pixels.
-    /// </summary>
     public int Width { get; private set; }
 
-    /// <summary>
-    /// Image height in pixels.
-    /// </summary>
     public int Height { get; private set; }
 
     /// <summary>
-    /// Display order for custom sorting within categories.
-    /// Lower numbers appear first.
+    /// Controls custom ordering within the gallery.
+    /// Lower values appear first.
     /// </summary>
     public int DisplayOrder { get; private set; }
 
-    /// <summary>
-    /// Indicates if this image should be featured on homepage/highlights.
-    /// </summary>
     public bool IsFeatured { get; private set; }
 
-    /// <summary>
-    /// Controls public visibility. False = admin only (draft/private).
-    /// </summary>
     public bool IsPublic { get; private set; } = true;
 
-    /// <summary>
-    /// The date when the photo was taken (event date), not upload date.
-    /// Useful for chronological galleries.
-    /// </summary>
     public DateTime? EventDate { get; private set; }
 
-    /// <summary>
-    /// Name of the photographer (optional attribution).
-    /// </summary>
     public string? Photographer { get; private set; }
 
-    /// <summary>
-    /// Number of times this image has been viewed.
-    /// Updated asynchronously to avoid performance impact.
-    /// </summary>
     public int ViewCount { get; private set; }
 
-    /// <summary>
-    /// SHA256 hash of the image data for duplicate detection.
-    /// Prevents storing the same image multiple times.
-    /// </summary>
     public string? ImageHash { get; private set; }
 
-    /// <summary>
-    /// EF Core requires a parameterless constructor for entity materialization.
-    /// </summary>
-    private GalleryImage() { }
+    private GalleryImage()
+    {
+    }
 
-    /// <summary>
-    /// Factory method to create a new gallery image with validation.
-    /// Enforces domain invariants and business rules.
-    /// </summary>
-    /// <param name="title">Display title (required, max 200 chars)</param>
-    /// <param name="imageData">Binary image data (required, max 10MB)</param>
-    /// <param name="thumbnailData">Optional pre-generated thumbnail</param>
-    /// <param name="categoryId">Parent category ID (required)</param>
-    /// <param name="altText">Accessibility alt text (required)</param>
-    /// <param name="contentType">MIME type (default: image/jpeg)</param>
-    /// <param name="fileSizeBytes">Original file size in bytes</param>
-    /// <param name="width">Image width in pixels</param>
-    /// <param name="height">Image height in pixels</param>
-    /// <param name="description">Optional description</param>
-    /// <param name="eventDate">Optional event date</param>
-    /// <param name="photographer">Optional photographer name</param>
-    /// <returns>New GalleryImage instance</returns>
-    /// <exception cref="ArgumentException">Thrown when required fields are invalid</exception>
     public static GalleryImage Create(
         string title,
-        byte[] imageData,
+        string imagePath,
         Guid categoryId,
         string altText,
-        string contentType = "image/jpeg",
-        int fileSizeBytes = 0,
-        int width = 0,
-        int height = 0,
-        byte[]? thumbnailData = null,
+        string contentType,
+        int fileSizeBytes,
+        int width,
+        int height,
+        string imageHash,
+        string? thumbnailPath = null,
         string? description = null,
         DateTime? eventDate = null,
         string? photographer = null)
     {
-        // Validate required fields using .NET 7+ argument validation
-        ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
-        ArgumentException.ThrowIfNullOrWhiteSpace(altText, nameof(altText));
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            title,
+            nameof(title));
 
-        if (imageData.Length == 0)
-            throw new ArgumentException("Image data cannot be empty.", nameof(imageData));
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            imagePath,
+            nameof(imagePath));
 
-        // Enforce 10MB limit to prevent database bloat
-        if (imageData.Length > 10 * 1024 * 1024)
-            throw new ArgumentException("Image size cannot exceed 10MB.", nameof(imageData));
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            altText,
+            nameof(altText));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            contentType,
+            nameof(contentType));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            imageHash,
+            nameof(imageHash));
+
+        if (categoryId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A valid gallery category is required.",
+                nameof(categoryId));
+        }
+
+        if (fileSizeBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(fileSizeBytes),
+                "Image file size must be greater than zero.");
+        }
+
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(width),
+                "Image width must be greater than zero.");
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(height),
+                "Image height must be greater than zero.");
+        }
 
         return new GalleryImage
         {
             Title = title.Trim(),
-            ImageData = imageData,
-            ThumbnailData = thumbnailData,
-            CategoryId = categoryId,
+            Description = description?.Trim(),
+
+            ImagePath = imagePath.Trim(),
+            ThumbnailPath = thumbnailPath?.Trim(),
+
+            ContentType = contentType.Trim(),
             AltText = altText.Trim(),
-            ContentType = contentType,
-            FileSizeBytes = fileSizeBytes > 0 ? fileSizeBytes : imageData.Length,
+
+            CategoryId = categoryId,
+
+            FileSizeBytes = fileSizeBytes,
             Width = width,
             Height = height,
-            Description = description?.Trim(),
-            EventDate = eventDate,
-            Photographer = photographer?.Trim(),
+
+            DisplayOrder = 0,
             IsFeatured = false,
             IsPublic = true,
-            DisplayOrder = 0,
+
+            EventDate = eventDate,
+            Photographer = photographer?.Trim(),
+
             ViewCount = 0,
-            // Generate hash for duplicate detection
-            ImageHash = GenerateHash(imageData)
+
+            ImageHash = imageHash.Trim()
         };
     }
 
     /// <summary>
-    /// Updates image metadata (title, description, alt text, photographer).
-    /// Does NOT modify the actual image binary data.
+    /// Updates editable textual metadata.
     /// </summary>
-    public void UpdateMetadata(string title, string? description, string altText, string? photographer)
+    public void UpdateMetadata(
+        string title,
+        string? description,
+        string altText,
+        string? photographer,
+        DateTime? eventDate = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            title,
+            nameof(title));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            altText,
+            nameof(altText));
+
         Title = title.Trim();
         Description = description?.Trim();
         AltText = altText.Trim();
         Photographer = photographer?.Trim();
+        EventDate = eventDate;
+
         MarkAsUpdated();
     }
 
     /// <summary>
-    /// Replaces the image binary data and regenerates the hash.
-    /// Should be called when uploading a new version of the image.
+    /// Changes the gallery category assigned to this image.
+    /// Category existence and availability are validated by
+    /// the Application layer before this method is called.
     /// </summary>
-    public void ReplaceImage(byte[] imageData, byte[]? thumbnailData = null)
+    public void SetCategory(Guid categoryId)
     {
-        if (imageData.Length == 0)
-            throw new ArgumentException("Image data cannot be empty.", nameof(imageData));
+        if (categoryId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A valid gallery category is required.",
+                nameof(categoryId));
+        }
 
-        if (imageData.Length > 10 * 1024 * 1024)
-            throw new ArgumentException("Image size cannot exceed 10MB.", nameof(imageData));
+        if (CategoryId == categoryId)
+        {
+            return;
+        }
 
-        ImageData = imageData;
-        ThumbnailData = thumbnailData;
-        FileSizeBytes = imageData.Length;
-        ImageHash = GenerateHash(imageData);
+        CategoryId = categoryId;
+
         MarkAsUpdated();
     }
 
     /// <summary>
-    /// Marks the image as featured (appears in homepage highlights).
+    /// Replaces the stored image information after the physical
+    /// image file has been replaced successfully.
     /// </summary>
-    public void SetFeatured(bool isFeatured) => IsFeatured = isFeatured;
+    public void ReplaceImage(
+        string imagePath,
+        string? thumbnailPath,
+        string contentType,
+        int fileSizeBytes,
+        int width,
+        int height,
+        string imageHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            imagePath,
+            nameof(imagePath));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            contentType,
+            nameof(contentType));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            imageHash,
+            nameof(imageHash));
+
+        if (fileSizeBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(fileSizeBytes),
+                "Image file size must be greater than zero.");
+        }
+
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(width),
+                "Image width must be greater than zero.");
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(height),
+                "Image height must be greater than zero.");
+        }
+
+        ImagePath = imagePath.Trim();
+        ThumbnailPath = thumbnailPath?.Trim();
+
+        ContentType = contentType.Trim();
+
+        FileSizeBytes = fileSizeBytes;
+        Width = width;
+        Height = height;
+
+        ImageHash = imageHash.Trim();
+
+        MarkAsUpdated();
+    }
+
+    public void SetFeatured(bool isFeatured)
+    {
+        IsFeatured = isFeatured;
+        MarkAsUpdated();
+    }
+
+    public void TogglePublic()
+    {
+        IsPublic = !IsPublic;
+        MarkAsUpdated();
+    }
+
+    public void IncrementViewCount()
+    {
+        ViewCount++;
+    }
 
     /// <summary>
-    /// Toggles public visibility. Private images are admin-only.
+    /// Sets custom display order.
+    /// Lower values appear first.
     /// </summary>
-    public void TogglePublic() => IsPublic = !IsPublic;
+    public void SetDisplayOrder(int order)
+    {
+        if (order < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(order),
+                "Display order cannot be negative.");
+        }
 
-    /// <summary>
-    /// Increments the view counter.
-    /// Should be called asynchronously to avoid blocking page loads.
-    /// </summary>
-    public void IncrementViewCount() => ViewCount++;
+        if (DisplayOrder == order)
+        {
+            return;
+        }
 
-    /// <summary>
-    /// Sets the display order for custom sorting.
-    /// </summary>
-    public void SetDisplayOrder(int order) => DisplayOrder = order;
+        DisplayOrder = order;
+        MarkAsUpdated();
+    }
 
-    /// <summary>
-    /// Adds a tag to the image if not already present.
-    /// </summary>
     public void AddTag(Guid tagId)
     {
-        if (!Tags.Any(t => t.TagId == tagId))
+        if (tagId == Guid.Empty)
         {
-            Tags.Add(new GalleryImageTag { ImageId = Id, TagId = tagId });
+            throw new ArgumentException(
+                "A valid tag ID is required.",
+                nameof(tagId));
         }
+
+        if (Tags.Any(
+                tag => tag.TagId == tagId))
+        {
+            return;
+        }
+
+        Tags.Add(
+            new GalleryImageTag
+            {
+                ImageId = Id,
+                TagId = tagId
+            });
     }
 
-    /// <summary>
-    /// Removes a tag from the image.
-    /// </summary>
     public void RemoveTag(Guid tagId)
     {
-        var tagToRemove = Tags.FirstOrDefault(t => t.TagId == tagId);
-        if (tagToRemove != null)
+        var tagToRemove =
+            Tags.FirstOrDefault(
+                tag =>
+                    tag.TagId == tagId);
+
+        if (tagToRemove is not null)
         {
             Tags.Remove(tagToRemove);
         }
     }
 
-    /// <summary>
-    /// Generates a SHA256 hash of the image data for duplicate detection.
-    /// </summary>
-    private static string GenerateHash(byte[] data)
+    public static string GenerateImageHash(
+        byte[] imageData)
     {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hash = sha256.ComputeHash(data);
-        return Convert.ToHexString(hash);
+        ArgumentNullException.ThrowIfNull(
+            imageData);
+
+        if (imageData.Length == 0)
+        {
+            throw new ArgumentException(
+                "Image data cannot be empty.",
+                nameof(imageData));
+        }
+
+        var hash =
+            SHA256.HashData(
+                imageData);
+
+        return Convert.ToHexString(
+            hash);
     }
 }
