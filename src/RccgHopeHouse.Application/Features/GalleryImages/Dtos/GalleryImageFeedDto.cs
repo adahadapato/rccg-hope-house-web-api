@@ -5,6 +5,10 @@
 ///
 /// The feed uses the generated thumbnail where available,
 /// avoiding transmission of full-size image data.
+///
+/// Width and Height are included so the frontend can preserve
+/// each photograph's natural aspect ratio without loading the
+/// full-size image first.
 /// </summary>
 public record GalleryImageFeedDto(
     Guid Id,
@@ -15,6 +19,8 @@ public record GalleryImageFeedDto(
     Guid CategoryId,
     string CategoryName,
     IReadOnlyList<string> Tags,
+    int Width,
+    int Height,
     bool IsFeatured,
     DateTime? EventDate,
     int DisplayOrder);

@@ -70,6 +70,8 @@ public class GetGalleryFeedQueryHandler
                                 name))
                         .Select(name => name!)
                         .ToList(),
+                    image.Width,
+                    image.Height,
                     image.IsFeatured,
                     image.EventDate,
                     image.DisplayOrder))
