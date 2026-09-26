@@ -5,6 +5,7 @@ namespace RccgHopeHouse.Application.Features.ServiceBroadcasts.Dtos;
 
 public record ServiceBroadcastDto(
     Guid Id,
+    Guid ChurchServiceId,
     ServiceCategory Category,
     string Title,
     string VideoId,
@@ -15,15 +16,20 @@ public record ServiceBroadcastDto(
     DateTime ServiceMonth,
     bool IsLive)
 {
-    public static ServiceBroadcastDto FromEntity(ServiceBroadcast b) => new(
-        Id: b.Id,
-        Category: b.Category,
-        Title: b.Title,
-        VideoId: b.VideoId,
-        VideoUrl: b.VideoUrl,
-        ThumbnailUrl: b.ThumbnailUrl,
-        Description: b.Description,
-        Theme: b.Theme,
-        ServiceMonth: b.ServiceMonth,
-        IsLive: b.IsLive);
+    public static ServiceBroadcastDto FromEntity(
+        ServiceBroadcast broadcast)
+    {
+        return new ServiceBroadcastDto(
+            Id: broadcast.Id,
+            ChurchServiceId: broadcast.ChurchServiceId,
+            Category: broadcast.Category,
+            Title: broadcast.Title,
+            VideoId: broadcast.VideoId,
+            VideoUrl: broadcast.VideoUrl,
+            ThumbnailUrl: broadcast.ThumbnailUrl,
+            Description: broadcast.Description,
+            Theme: broadcast.Theme,
+            ServiceMonth: broadcast.ServiceMonth,
+            IsLive: broadcast.IsLive);
+    }
 }

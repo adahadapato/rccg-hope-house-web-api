@@ -6,21 +6,22 @@ namespace RccgHopeHouse.Application.Features.ChurchServices.Validators;
 
 /// <summary>
 /// Validates UpdateChurchServiceCommand.
-/// Reuses create rules plus ID validation.
-/// NOTE: the previous StartTime &lt;= EndTime rule was removed — see
-/// CreateChurchServiceCommandValidator for the reasoning (midnight-crossing
-/// services like Last Friday Vigil and Holy Ghost Service would have been
-/// incorrectly rejected).
+///
+/// Midnight-crossing services are valid, so StartTime is deliberately
+/// not required to be earlier than EndTime.
 /// </summary>
-public class UpdateChurchServiceCommandValidator : AbstractValidator<UpdateChurchServiceCommand>
+public class UpdateChurchServiceCommandValidator
+    : AbstractValidator<UpdateChurchServiceCommand>
 {
     public UpdateChurchServiceCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage(ValidationMessages.Required);
+            .NotEmpty()
+            .WithMessage(ValidationMessages.Required);
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage(ValidationMessages.Required)
+            .NotEmpty()
+            .WithMessage(ValidationMessages.Required)
             .MaximumLength(100);
 
         RuleFor(x => x.Category)
@@ -30,7 +31,30 @@ public class UpdateChurchServiceCommandValidator : AbstractValidator<UpdateChurc
             .IsInEnum();
 
         RuleFor(x => x.ZoomId)
-            .NotEmpty().When(x => x.Location?.Equals("Zoom", System.StringComparison.OrdinalIgnoreCase) == true)
-            .WithMessage("Zoom ID is required when location is Zoom.");
+            .NotEmpty()
+            .When(x =>
+                x.Location?.Equals(
+                    "Zoom",
+                    StringComparison.OrdinalIgnoreCase) == true)
+            .WithMessage(
+                "Zoom ID is required when location is Zoom.");
+
+        RuleFor(x => x.DisplayOrder)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage(
+                "Display order must be 0 or greater.");
+
+        RuleFor(x => x.Icon)
+            .MaximumLength(50)
+            .When(x =>
+                !string.IsNullOrWhiteSpace(x.Icon))
+            .WithMessage(
+                "Icon must not exceed 50 characters.");
+
+        RuleFor(x => x.DayOfMonth)
+            .InclusiveBetween(1, 31)
+            .When(x => x.DayOfMonth.HasValue)
+            .WithMessage(
+                "Day of month must be between 1 and 31.");
     }
 }

@@ -13,8 +13,10 @@ using RccgHopeHouse.Api.Endpoints.Members;
 using RccgHopeHouse.Api.Endpoints.Offerings;
 using RccgHopeHouse.Api.Endpoints.PastorPosts;
 using RccgHopeHouse.Api.Endpoints.PrayerRequests;
+using RccgHopeHouse.Api.Endpoints.Prophecies;
 using RccgHopeHouse.Api.Endpoints.Sermons;
 using RccgHopeHouse.Api.Endpoints.ServiceBroadcasts;
+using RccgHopeHouse.Api.Endpoints.ThemesOfTheYear;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 
@@ -112,6 +114,8 @@ api.MapServiceBroadcastEndpoints();
 api.MapGivingTypeEndpoints();
 api.MapOfferingEndpoints();
 api.MapApiBibleEndpoints();
+api.MapProphecyEndpoints();
+api.MapThemeOfTheYearEndpoints();
 
 app.MapGet(
         "/health",

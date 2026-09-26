@@ -4,21 +4,70 @@ using RccgHopeHouse.Core.Entities;
 
 namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 
-public class ServiceBroadcastConfiguration : IEntityTypeConfiguration<ServiceBroadcast>
+public class ServiceBroadcastConfiguration
+    : IEntityTypeConfiguration<ServiceBroadcast>
 {
-    public void Configure(EntityTypeBuilder<ServiceBroadcast> builder)
+    public void Configure(
+        EntityTypeBuilder<ServiceBroadcast> builder)
     {
-        builder.ToTable("ServiceBroadcasts");
-        builder.HasKey(b => b.Id);
+        builder.ToTable(
+            "ServiceBroadcasts");
 
-        builder.Property(b => b.Title).IsRequired().HasMaxLength(200);
-        builder.Property(b => b.VideoId).IsRequired().HasMaxLength(20);
-        builder.Property(b => b.Description).HasMaxLength(1000);
-        builder.Property(b => b.Theme).HasMaxLength(100);
+        builder.HasKey(
+            broadcast => broadcast.Id);
 
-        builder.Ignore(b => b.ThumbnailUrl);
-        builder.Ignore(b => b.VideoUrl);
+        builder.Property(
+                broadcast =>
+                    broadcast.Title)
+            .IsRequired()
+            .HasMaxLength(200);
 
-        builder.HasIndex(b => new { b.Category, b.ServiceMonth });
+        builder.Property(
+                broadcast =>
+                    broadcast.VideoId)
+            .IsRequired()
+            .HasMaxLength(20);
+
+        builder.Property(
+                broadcast =>
+                    broadcast.Description)
+            .HasMaxLength(1000);
+
+        builder.Property(
+                broadcast =>
+                    broadcast.Theme)
+            .HasMaxLength(100);
+
+        builder.Property(
+                broadcast =>
+                    broadcast.ChurchServiceId)
+            .IsRequired();
+
+        builder.Ignore(
+            broadcast =>
+                broadcast.ThumbnailUrl);
+
+        builder.Ignore(
+            broadcast =>
+                broadcast.VideoUrl);
+
+        builder.HasIndex(
+            broadcast =>
+                broadcast.ChurchServiceId);
+
+        builder.HasIndex(
+            broadcast => new
+            {
+                broadcast.ChurchServiceId,
+                broadcast.ServiceMonth
+            })
+            .IsUnique();
+
+        builder.HasIndex(
+            broadcast => new
+            {
+                broadcast.Category,
+                broadcast.ServiceMonth
+            });
     }
 }

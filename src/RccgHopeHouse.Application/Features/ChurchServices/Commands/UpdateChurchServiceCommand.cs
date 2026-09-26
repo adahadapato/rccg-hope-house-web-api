@@ -18,4 +18,7 @@ public record UpdateChurchServiceCommand(
     RecurrencePattern Recurrence,
     int? DayOfMonth,
     bool IsLocal,
-    int DisplayOrder) : IRequest<ChurchServiceDto>;
+    int DisplayOrder,
+    string? Icon,
+    bool ShowInMonthlyServices
+) : IRequest<ChurchServiceDto>;

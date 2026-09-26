@@ -17,4 +17,7 @@ public record CreateChurchServiceCommand(
     RecurrencePattern Recurrence,
     int? DayOfMonth,
     bool IsLocal = true,
-    int DisplayOrder = 0) : IRequest<ChurchServiceDto>;
+    int DisplayOrder = 0,
+    string? Icon = null,
+    bool ShowInMonthlyServices = false
+) : IRequest<ChurchServiceDto>;

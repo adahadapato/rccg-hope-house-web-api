@@ -5,29 +5,80 @@ using RccgHopeHouse.Core.Entities;
 namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 
 /// <summary>
-/// Configuration for <see cref="ChurchService"/> schedule and Zoom metadata.
+/// Configuration for ChurchService schedule,
+/// presentation, location and Zoom metadata.
 /// </summary>
-public class ChurchServiceConfiguration : IEntityTypeConfiguration<ChurchService>
+public class ChurchServiceConfiguration
+    : IEntityTypeConfiguration<ChurchService>
 {
-    public void Configure(EntityTypeBuilder<ChurchService> builder)
+    public void Configure(
+        EntityTypeBuilder<ChurchService> builder)
     {
         builder.ToTable("ChurchServices");
-        builder.HasKey(s => s.Id);
 
-        builder.Property(s => s.Name).IsRequired().HasMaxLength(100);
-        builder.Property(s => s.Description).HasMaxLength(500);
-        builder.Property(s => s.Location).HasMaxLength(100);
-        builder.Property(s => s.ZoomId).HasMaxLength(50);
-        builder.Property(s => s.ZoomPasscode).HasMaxLength(20);
+        builder.HasKey(
+            service => service.Id);
 
-        // Indexes for public schedule queries
-        builder.HasIndex(s => s.DayOfWeek);
-        builder.HasIndex(s => s.IsActive);
-        builder.HasIndex(s => s.DisplayOrder);
+        builder.Property(
+                service => service.Name)
+            .IsRequired()
+            .HasMaxLength(100);
 
-        // Supports filtering the public feed by local vs. HQ-broadcast
-        // services (RegularServices.tsx vs. MonthlyServices.tsx query
-        // separately by this flag).
-        builder.HasIndex(s => s.IsLocal);
+        builder.Property(
+                service => service.Description)
+            .HasMaxLength(500);
+
+        builder.Property(
+                service => service.Location)
+            .HasMaxLength(100);
+
+        builder.Property(
+                service => service.ZoomId)
+            .HasMaxLength(50);
+
+        builder.Property(
+                service => service.ZoomPasscode)
+            .HasMaxLength(20);
+
+        builder.Property(
+                service => service.AdditionalInfo)
+            .HasMaxLength(1000);
+
+        builder.Property(
+                service => service.Icon)
+            .HasMaxLength(50);
+
+        builder.Property(
+                service => service.ShowInMonthlyServices)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.HasIndex(
+            service => service.DayOfWeek);
+
+        builder.HasIndex(
+            service => service.IsActive);
+
+        builder.HasIndex(
+            service => service.DisplayOrder);
+
+        builder.HasIndex(
+            service => service.IsLocal);
+
+        builder.HasIndex(
+            service =>
+                service.ShowInMonthlyServices);
+
+        builder.HasMany(
+                service =>
+                    service.Broadcasts)
+            .WithOne(
+                broadcast =>
+                    broadcast.ChurchService)
+            .HasForeignKey(
+                broadcast =>
+                    broadcast.ChurchServiceId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
     }
 }

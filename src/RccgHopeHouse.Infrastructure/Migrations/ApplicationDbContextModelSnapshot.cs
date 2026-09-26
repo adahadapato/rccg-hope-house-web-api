@@ -275,7 +275,8 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AdditionalInfo")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Category")
                         .HasColumnType("int");
@@ -299,6 +300,10 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.Property<TimeSpan?>("EndTime")
                         .HasColumnType("time");
 
+                    b.Property<string>("Icon")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -319,6 +324,11 @@ namespace RccgHopeHouse.Infrastructure.Migrations
 
                     b.Property<int>("Recurrence")
                         .HasColumnType("int");
+
+                    b.Property<bool>("ShowInMonthlyServices")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<TimeSpan?>("StartTime")
                         .HasColumnType("time");
@@ -343,6 +353,8 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.HasIndex("IsActive");
 
                     b.HasIndex("IsLocal");
+
+                    b.HasIndex("ShowInMonthlyServices");
 
                     b.ToTable("ChurchServices", (string)null);
                 });
@@ -904,6 +916,124 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.ToTable("PrayerRequests", (string)null);
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.Prophecy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("Prophecies", (string)null);
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ProphecyCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("ProphecyYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("ProphecyYearId");
+
+                    b.HasIndex("ProphecyYearId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("ProphecyCategories", (string)null);
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ProphecyYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsPublished");
+
+                    b.HasIndex("Year")
+                        .IsUnique();
+
+                    b.ToTable("ProphecyYears", (string)null);
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.Sermon", b =>
                 {
                     b.Property<Guid>("Id")
@@ -962,6 +1092,9 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.Property<int>("Category")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("ChurchServiceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -997,7 +1130,12 @@ namespace RccgHopeHouse.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ChurchServiceId");
+
                     b.HasIndex("Category", "ServiceMonth");
+
+                    b.HasIndex("ChurchServiceId", "ServiceMonth")
+                        .IsUnique();
 
                     b.ToTable("ServiceBroadcasts", (string)null);
                 });
@@ -1249,9 +1387,47 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.Navigation("ThemeOfTheYear");
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.Prophecy", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.ProphecyCategory", "Category")
+                        .WithMany("Prophecies")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ProphecyCategory", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.ProphecyYear", "ProphecyYear")
+                        .WithMany("Categories")
+                        .HasForeignKey("ProphecyYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProphecyYear");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ServiceBroadcast", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.ChurchService", "ChurchService")
+                        .WithMany("Broadcasts")
+                        .HasForeignKey("ChurchServiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChurchService");
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.ChurchInfo", b =>
                 {
                     b.Navigation("ContactMethods");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ChurchService", b =>
+                {
+                    b.Navigation("Broadcasts");
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryCategory", b =>
@@ -1267,6 +1443,16 @@ namespace RccgHopeHouse.Infrastructure.Migrations
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryTag", b =>
                 {
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ProphecyCategory", b =>
+                {
+                    b.Navigation("Prophecies");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.ProphecyYear", b =>
+                {
+                    b.Navigation("Categories");
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.ThemeOfTheYear", b =>

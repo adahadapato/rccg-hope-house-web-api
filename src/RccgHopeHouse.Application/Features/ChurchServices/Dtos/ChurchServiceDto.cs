@@ -4,7 +4,8 @@ namespace RccgHopeHouse.Application.Features.ChurchServices.Dtos;
 
 /// <summary>
 /// Detailed DTO for admin views and single-service API responses.
-/// Includes all metadata, recurrence rules, and Zoom configuration.
+/// Includes schedule, recurrence, Zoom configuration, presentation
+/// metadata and visibility settings.
 /// </summary>
 public record ChurchServiceDto(
     Guid Id,
@@ -21,4 +22,6 @@ public record ChurchServiceDto(
     int? DayOfMonth,
     bool IsLocal,
     bool IsActive,
-    int DisplayOrder);
+    int DisplayOrder,
+    string? Icon,
+    bool ShowInMonthlyServices);

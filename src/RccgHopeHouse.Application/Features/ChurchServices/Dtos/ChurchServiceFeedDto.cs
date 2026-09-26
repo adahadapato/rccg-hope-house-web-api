@@ -3,8 +3,9 @@
 namespace RccgHopeHouse.Application.Features.ChurchServices.Dtos;
 
 /// <summary>
-/// Lightweight DTO for public schedule feeds.
-/// Excludes administrative fields (Description, DayOfMonth, DisplayOrder) for faster payload delivery.
+/// Public DTO for church service schedule feeds.
+/// Contains the scheduling and presentation information required
+/// for the website to render services without hard-coded mappings.
 /// </summary>
 public record ChurchServiceFeedDto(
     Guid Id,
@@ -17,4 +18,9 @@ public record ChurchServiceFeedDto(
     string? ZoomId,
     string? ZoomPasscode,
     bool IsLocal,
-    bool IsActive);
+    bool IsActive,
+    RecurrencePattern Recurrence,
+    int? DayOfMonth,
+    int DisplayOrder,
+    string? Icon,
+    bool ShowInMonthlyServices);

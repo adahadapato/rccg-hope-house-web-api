@@ -26,6 +26,7 @@ public static class DbSeeder
         await SeedServiceBroadcastsAsync(context, ct);
         await SeedGivingTypesAsync(context, ct);
         await SeedGalleryCategoriesAsync(context, ct);
+        await SeedPropheciesAsync(context, ct);
         await SeedAdminAccountAsync(userManager, roleManager, configuration);
     }
 
@@ -92,6 +93,155 @@ public static class DbSeeder
 
         await userManager.AddToRoleAsync(admin, "Admin");
         Console.WriteLine("=== SeedAdminAccountAsync: COMPLETED SUCCESSFULLY ===");
+    }
+
+
+
+    /// <summary>
+    /// Seeds the RCCG prophecies for 2026 that were originally
+    /// hardcoded in the frontend.
+    ///
+    /// The prophecy year is used as the seed boundary. If 2026 already
+    /// exists, this method does nothing so that subsequent administrator
+    /// changes are not overwritten or recreated on application startup.
+    /// </summary>
+    private static async Task SeedPropheciesAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        const int year = 2026;
+
+        var exists = await context.ProphecyYears
+            .AnyAsync(
+                prophecyYear => prophecyYear.Year == year,
+                ct);
+
+        if (exists)
+            return;
+
+        var prophecyYear = ProphecyYear.Create(
+            year: year,
+            isPublished: true);
+
+        // ==================== General Prophecies ====================
+
+        var generalCategory = ProphecyCategory.Create(
+            prophecyYearId: prophecyYear.Id,
+            name: "General Prophecies",
+            displayOrder: 1,
+            description: "For the Church & Believers");
+
+        var generalProphecies = new[]
+        {
+        Prophecy.Create(
+            categoryId: generalCategory.Id,
+            text: "Daddy says 2026 will be more remarkable than 2025",
+            displayOrder: 1),
+
+        Prophecy.Create(
+            categoryId: generalCategory.Id,
+            text: "Daddy says that the wind that has been blowing since 2024 will continue to blow more strongly than before",
+            displayOrder: 2),
+
+        Prophecy.Create(
+            categoryId: generalCategory.Id,
+            text: "Daddy said there will be more opportunities this year than last year – more breakthroughs, more successes, more victories and less failures",
+            displayOrder: 3),
+
+        Prophecy.Create(
+            categoryId: generalCategory.Id,
+            text: "Daddy says a lot of testimonies this year will begin with, 'God remembered me at last!'",
+            displayOrder: 4)
+    };
+
+        // ==================== Nigeria ====================
+
+        var nigeriaCategory = ProphecyCategory.Create(
+            prophecyYearId: prophecyYear.Id,
+            name: "For Nigeria",
+            displayOrder: 2,
+            description: "Prophetic Declarations");
+
+        var nigeriaProphecies = new[]
+        {
+        Prophecy.Create(
+            categoryId: nigeriaCategory.Id,
+            text: "This year there will be a reduction in hunger",
+            displayOrder: 1),
+
+        Prophecy.Create(
+            categoryId: nigeriaCategory.Id,
+            text: "Small and medium enterprises will begin to blossom",
+            displayOrder: 2),
+
+        Prophecy.Create(
+            categoryId: nigeriaCategory.Id,
+            text: "Daddy said something that I can only put down as reverse 'japa' – many who 'japad' (travelled) will come back home",
+            displayOrder: 3),
+
+        Prophecy.Create(
+            categoryId: nigeriaCategory.Id,
+            text: "Note: The second part concerning Nigeria is being prayed about and will be shared when God gives the go-ahead",
+            displayOrder: 4)
+    };
+
+        // ==================== International ====================
+
+        var internationalCategory = ProphecyCategory.Create(
+            prophecyYearId: prophecyYear.Id,
+            name: "International Scene",
+            displayOrder: 3,
+            description: "Global Prophecies");
+
+        var internationalProphecies = new[]
+        {
+        Prophecy.Create(
+            categoryId: internationalCategory.Id,
+            text: "The chance of a major war is less this year than last year",
+            displayOrder: 1),
+
+        Prophecy.Create(
+            categoryId: internationalCategory.Id,
+            text: "As far as the weather is concerned, the pattern will be similar to 2025 except there is the chance of a couple of major hurricanes",
+            displayOrder: 2),
+
+        Prophecy.Create(
+            categoryId: internationalCategory.Id,
+            text: "RCCG: we will tell your pastors who will tell house fellowship leaders, who will tell you because what He is saying to you, I don't want anybody else to know",
+            displayOrder: 3),
+
+        Prophecy.Create(
+            categoryId: internationalCategory.Id,
+            text: "If we are going to fast, we won't begin on January 11. They are waiting for us to begin on January 11 – we will disappoint them",
+            displayOrder: 4)
+    };
+
+        // ==================== Add Year ====================
+
+        await context.ProphecyYears.AddAsync(
+            prophecyYear,
+            ct);
+
+        // ==================== Add Categories ====================
+
+        await context.ProphecyCategories.AddRangeAsync(
+            new[]
+            {
+            generalCategory,
+            nigeriaCategory,
+            internationalCategory
+            },
+            ct);
+
+        // ==================== Add Prophecies ====================
+
+        await context.Prophecies.AddRangeAsync(
+            generalProphecies
+                .Concat(nigeriaProphecies)
+                .Concat(internationalProphecies),
+            ct);
+
+        await context.SaveChangesAsync(ct);
     }
 
 
@@ -259,49 +409,112 @@ public static class DbSeeder
     }
 
     /// <summary>
-    /// Seeds one current-month broadcast per HQ service category (Holy
-    /// Communion, Holy Ghost Service, Thanksgiving Service). Only the Holy
-    /// Ghost Service entry uses a real, confirmed YouTube URL
-    /// (https://www.youtube.com/watch?v=FAgcFBNHYPk); the other two use
-    /// clearly-marked placeholder video IDs that MUST be replaced with real
-    /// URLs via the admin API (PUT /api/service-broadcasts/admin/{id}) before
-    /// this goes live — otherwise their thumbnails/links will be broken.
+    /// Seeds one current-month broadcast for each HQ monthly service.
+    ///
+    /// Broadcasts are linked directly to their ChurchService records rather
+    /// than relying on hard-coded frontend mappings. This allows monthly
+    /// services to be added, activated/deactivated, reordered, or removed
+    /// from the monthly-services display through the service configuration.
+    ///
+    /// Existing broadcast data is not overwritten.
     /// </summary>
-    private static async Task SeedServiceBroadcastsAsync(ApplicationDbContext context, CancellationToken ct)
+    private static async Task SeedServiceBroadcastsAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
     {
         var exists = await context.ServiceBroadcasts.AnyAsync(ct);
-        if (exists) return;
 
-        var thisMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        if (exists)
+            return;
+
+        var thisMonth = new DateTime(
+            DateTime.UtcNow.Year,
+            DateTime.UtcNow.Month,
+            1);
+
+        // ============================================================
+        // Resolve the actual HQ ChurchService records.
+        //
+        // IsLocal is important here because a local service can share
+        // the same ServiceCategory as an HQ monthly service.
+        // ============================================================
+
+        var holyCommunion = await context.ChurchServices
+            .SingleOrDefaultAsync(
+                service =>
+                    !service.IsLocal &&
+                    service.Category == ServiceCategory.HolyCommunion,
+                ct);
+
+        var holyGhostService = await context.ChurchServices
+            .SingleOrDefaultAsync(
+                service =>
+                    !service.IsLocal &&
+                    service.Category == ServiceCategory.HolyGhostService,
+                ct);
+
+        var thanksgivingService = await context.ChurchServices
+            .SingleOrDefaultAsync(
+                service =>
+                    !service.IsLocal &&
+                    service.Category == ServiceCategory.ThanksgivingService,
+                ct);
+
+        if (holyCommunion is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot seed the Holy Communion broadcast because the HQ Holy Communion ChurchService was not found.");
+        }
+
+        if (holyGhostService is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot seed the Holy Ghost Service broadcast because the HQ Holy Ghost Service ChurchService was not found.");
+        }
+
+        if (thanksgivingService is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot seed the Thanksgiving Service broadcast because the HQ Thanksgiving Service ChurchService was not found.");
+        }
+
+        // ============================================================
+        // Seed current-month broadcasts.
+        // ============================================================
 
         var broadcasts = new[]
-{
-    ServiceBroadcast.Create(
-        category: ServiceCategory.HolyGhostService,
-        title: "PASTOR E.A ADEBOYE",
-        youtubeUrl: "https://www.youtube.com/watch?v=FAgcFBNHYPk",
-        serviceMonth: thisMonth,
-        description: $"{thisMonth:MMMM yyyy} Holy Ghost Service",
-        theme: "Divine Faithfulness"),
+        {
+        ServiceBroadcast.Create(
+            churchServiceId: holyGhostService.Id,
+            category: holyGhostService.Category,
+            title: "PASTOR E.A ADEBOYE",
+            youtubeUrl: "https://www.youtube.com/watch?v=FAgcFBNHYPk",
+            serviceMonth: thisMonth,
+            description: $"{thisMonth:MMMM yyyy} Holy Ghost Service",
+            theme: "Divine Faithfulness"),
 
-    ServiceBroadcast.Create(
-        category: ServiceCategory.HolyCommunion,
-        title: "PASTOR E.A ADEBOYE",
-        youtubeUrl: "9sjD8MINjSo", // ⚠️ PLACEHOLDER
-        serviceMonth: thisMonth,
-        description: $"{thisMonth:MMMM yyyy} Holy Communion Service"),
-        // No theme badge for Holy Communion — matches original screenshot, which showed no badge on that card.
+        ServiceBroadcast.Create(
+            churchServiceId: holyCommunion.Id,
+            category: holyCommunion.Category,
+            title: "PASTOR E.A ADEBOYE",
+            youtubeUrl: "9sjD8MINjSo",
+            serviceMonth: thisMonth,
+            description: $"{thisMonth:MMMM yyyy} Holy Communion Service"),
 
-    ServiceBroadcast.Create(
-        category: ServiceCategory.ThanksgivingService,
-        title: "PASTOR E.A ADEBOYE",
-        youtubeUrl: "RXgNUBev7Ko", // ⚠️ PLACEHOLDER
-        serviceMonth: thisMonth,
-        description: $"{thisMonth:MMMM yyyy} Thanksgiving Service",
-        theme: "Divine Partnership")
-};
+        ServiceBroadcast.Create(
+            churchServiceId: thanksgivingService.Id,
+            category: thanksgivingService.Category,
+            title: "PASTOR E.A ADEBOYE",
+            youtubeUrl: "RXgNUBev7Ko",
+            serviceMonth: thisMonth,
+            description: $"{thisMonth:MMMM yyyy} Thanksgiving Service",
+            theme: "Divine Partnership")
+    };
 
-        await context.ServiceBroadcasts.AddRangeAsync(broadcasts, ct);
+        await context.ServiceBroadcasts.AddRangeAsync(
+            broadcasts,
+            ct);
+
         await context.SaveChangesAsync(ct);
     }
 
@@ -316,127 +529,212 @@ public static class DbSeeder
     /// any consuming code (frontend or otherwise) must interpret EndTime &lt;
     /// StartTime as "ends the following day."
     /// </summary>
-    private static async Task SeedChurchServicesAsync(ApplicationDbContext context, CancellationToken ct)
+    private static async Task SeedChurchServicesAsync(
+    ApplicationDbContext context,
+    CancellationToken ct)
     {
-        var exists = await context.ChurchServices.AnyAsync(ct);
-        if (exists) return;
+        var existingServices =
+            await context.ChurchServices
+                .ToListAsync(ct);
 
-        var services = new List<ChurchService>
-    {
-        // ===== Regular local services (RegularServices.tsx) =====
-        ChurchService.Create(
-            name: "Sunday School",
-            category: ServiceCategory.SundaySchool,
-            dayOfWeek: DayOfWeek.Sunday,
-            startTime: new TimeSpan(10, 0, 0),
-            endTime: new TimeSpan(11, 0, 0),
-            recurrence: RecurrencePattern.Weekly,
-            isLocal: true),
+        if (existingServices.Count == 0)
+        {
+            var services = new List<ChurchService>
+        {
+            // ============================================================
+            // Regular local services
+            // ============================================================
 
-        ChurchService.Create(
-            name: "Worship Service",
-            category: ServiceCategory.WorshipService,
-            dayOfWeek: DayOfWeek.Sunday,
-            startTime: new TimeSpan(11, 0, 0),
-            endTime: new TimeSpan(12, 40, 0),
-            description: "Physical Service",
-            recurrence: RecurrencePattern.Weekly,
-            isLocal: true),
+            ChurchService.Create(
+                name: "Sunday School",
+                category: ServiceCategory.SundaySchool,
+                dayOfWeek: DayOfWeek.Sunday,
+                startTime: new TimeSpan(10, 0, 0),
+                endTime: new TimeSpan(11, 0, 0),
+                recurrence: RecurrencePattern.Weekly,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "Thanksgiving Sunday",
-            category: ServiceCategory.ThanksgivingService,
-            dayOfWeek: DayOfWeek.Sunday,
-            startTime: new TimeSpan(11, 0, 0),
-            endTime: new TimeSpan(12, 45, 0),
-            description: "First Sunday of every month — local in-house service",
-            recurrence: RecurrencePattern.FirstOfMonth,
-            isLocal: true),
+            ChurchService.Create(
+                name: "Worship Service",
+                category: ServiceCategory.WorshipService,
+                dayOfWeek: DayOfWeek.Sunday,
+                startTime: new TimeSpan(11, 0, 0),
+                endTime: new TimeSpan(12, 40, 0),
+                description: "Physical Service",
+                recurrence: RecurrencePattern.Weekly,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "Fasting and Prayer Day",
-            category: ServiceCategory.WednesdayPrayer,
-            dayOfWeek: DayOfWeek.Wednesday,
-            startTime: new TimeSpan(19, 0, 0),
-            endTime: new TimeSpan(19, 30, 0),
-            description: "Online Prayer",
-            recurrence: RecurrencePattern.Weekly,
-            isLocal: true),
+            ChurchService.Create(
+                name: "Thanksgiving Sunday",
+                category: ServiceCategory.ThanksgivingService,
+                dayOfWeek: DayOfWeek.Sunday,
+                startTime: new TimeSpan(11, 0, 0),
+                endTime: new TimeSpan(12, 45, 0),
+                description:
+                    "First Sunday of every month — local in-house service",
+                recurrence: RecurrencePattern.FirstOfMonth,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "End of Month Vigil",
-            category: ServiceCategory.LastFridayVigil,
-            dayOfWeek: DayOfWeek.Friday,
-            startTime: new TimeSpan(22, 0, 0),
-            endTime: new TimeSpan(1, 0, 0),
-            description: "Last Friday of the Month",
-            recurrence: RecurrencePattern.LastOfMonth,
-            isLocal: true),
+            ChurchService.Create(
+                name: "Fasting and Prayer Day",
+                category: ServiceCategory.WednesdayPrayer,
+                dayOfWeek: DayOfWeek.Wednesday,
+                startTime: new TimeSpan(19, 0, 0),
+                endTime: new TimeSpan(19, 30, 0),
+                description: "Online Prayer",
+                recurrence: RecurrencePattern.Weekly,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "Evangelism",
-            category: ServiceCategory.Evangelism,
-            dayOfWeek: DayOfWeek.Saturday,
-            startTime: new TimeSpan(13, 0, 0),
-            endTime: new TimeSpan(14, 0, 0),
-            description: "Every Fortnight Saturdays",
-            recurrence: RecurrencePattern.Fortnightly,
-            isLocal: true),
+            ChurchService.Create(
+                name: "End of Month Vigil",
+                category: ServiceCategory.LastFridayVigil,
+                dayOfWeek: DayOfWeek.Friday,
+                startTime: new TimeSpan(22, 0, 0),
+                endTime: new TimeSpan(1, 0, 0),
+                description: "Last Friday of the Month",
+                recurrence: RecurrencePattern.LastOfMonth,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "House Fellowship",
-            category: ServiceCategory.HouseFellowship,
-            dayOfWeek: DayOfWeek.Sunday,
-            startTime: new TimeSpan(18, 0, 0),
-            endTime: new TimeSpan(19, 0, 0),
-            description: "Except 1st Sunday of the month",
-            recurrence: RecurrencePattern.Weekly,
-            isLocal: true),
+            ChurchService.Create(
+                name: "Evangelism",
+                category: ServiceCategory.Evangelism,
+                dayOfWeek: DayOfWeek.Saturday,
+                startTime: new TimeSpan(13, 0, 0),
+                endTime: new TimeSpan(14, 0, 0),
+                description: "Every Fortnight Saturdays",
+                recurrence: RecurrencePattern.Fortnightly,
+                isLocal: true),
 
-        // ===== HQ broadcast monthly services (MonthlyServices.tsx) =====
-        ChurchService.Create(
-            name: "Holy Communion",
-            category: ServiceCategory.HolyCommunion,
-            dayOfWeek: DayOfWeek.Wednesday,
-            startTime: new TimeSpan(18, 0, 0),
-            endTime: new TimeSpan(20, 0, 0),
-            description: "Broadcast from RCCG HQ, Lagos",
-            recurrence: RecurrencePattern.FirstOfMonth,
-            isLocal: false),
+            ChurchService.Create(
+                name: "House Fellowship",
+                category: ServiceCategory.HouseFellowship,
+                dayOfWeek: DayOfWeek.Sunday,
+                startTime: new TimeSpan(18, 0, 0),
+                endTime: new TimeSpan(19, 0, 0),
+                description: "Except 1st Sunday of the month",
+                recurrence: RecurrencePattern.Weekly,
+                isLocal: true),
 
-        ChurchService.Create(
-            name: "Holy Ghost Service",
-            category: ServiceCategory.HolyGhostService,
-            dayOfWeek: DayOfWeek.Friday,
-            startTime: new TimeSpan(22, 0, 0),
-            endTime: new TimeSpan(0, 0, 0),
-            description: "Broadcast from RCCG HQ, Lagos",
-            recurrence: RecurrencePattern.FirstOfMonth,
-            isLocal: false),
+            // ============================================================
+            // HQ monthly services
+            // ============================================================
 
-        ChurchService.Create(
-            name: "Thanksgiving Service",
-            category: ServiceCategory.ThanksgivingService,
-            dayOfWeek: DayOfWeek.Sunday,
-            startTime: new TimeSpan(9, 0, 0),
-            endTime: new TimeSpan(12, 0, 0),
-            description: "Broadcast from RCCG HQ, Lagos",
-            recurrence: RecurrencePattern.FirstOfMonth,
-            isLocal: false)
-    };
+            ChurchService.Create(
+                name: "Holy Communion",
+                category: ServiceCategory.HolyCommunion,
+                dayOfWeek: DayOfWeek.Wednesday,
+                startTime: new TimeSpan(18, 0, 0),
+                endTime: new TimeSpan(20, 0, 0),
+                description: "Broadcast from RCCG HQ, Lagos",
+                recurrence: RecurrencePattern.FirstOfMonth,
+                isLocal: false,
+                icon: "🍞",
+                showInMonthlyServices: true),
 
-        // Zoom/Location details, set via UpdateSchedule() since Create() doesn't
-        // accept them directly.
-        var fastingPrayer = services[3];
-        fastingPrayer.UpdateSchedule(fastingPrayer.StartTime, fastingPrayer.EndTime, "Online", "833 483 0396", null);
+            ChurchService.Create(
+                name: "Holy Ghost Service",
+                category: ServiceCategory.HolyGhostService,
+                dayOfWeek: DayOfWeek.Friday,
+                startTime: new TimeSpan(22, 0, 0),
+                endTime: new TimeSpan(0, 0, 0),
+                description: "Broadcast from RCCG HQ, Lagos",
+                recurrence: RecurrencePattern.FirstOfMonth,
+                isLocal: false,
+                icon: "🕊️",
+                showInMonthlyServices: true),
 
-        var houseFellowship = services[6];
-        houseFellowship.UpdateSchedule(houseFellowship.StartTime, houseFellowship.EndTime, "Online", "833 483 0396", "333");
+            ChurchService.Create(
+                name: "Thanksgiving Service",
+                category: ServiceCategory.ThanksgivingService,
+                dayOfWeek: DayOfWeek.Sunday,
+                startTime: new TimeSpan(9, 0, 0),
+                endTime: new TimeSpan(12, 0, 0),
+                description: "Broadcast from RCCG HQ, Lagos",
+                recurrence: RecurrencePattern.FirstOfMonth,
+                isLocal: false,
+                icon: "🙏",
+                showInMonthlyServices: true)
+        };
 
-        for (int i = 0; i < services.Count; i++)
-            services[i].SetDisplayOrder(i);
+            var fastingPrayer = services[3];
 
-        await context.ChurchServices.AddRangeAsync(services, ct);
+            fastingPrayer.UpdateSchedule(
+                fastingPrayer.StartTime,
+                fastingPrayer.EndTime,
+                "Online",
+                "833 483 0396",
+                null);
+
+            var houseFellowship = services[6];
+
+            houseFellowship.UpdateSchedule(
+                houseFellowship.StartTime,
+                houseFellowship.EndTime,
+                "Online",
+                "833 483 0396",
+                "333");
+
+            for (var i = 0; i < services.Count; i++)
+            {
+                services[i].SetDisplayOrder(i);
+            }
+
+            await context.ChurchServices.AddRangeAsync(
+                services,
+                ct);
+
+            await context.SaveChangesAsync(ct);
+
+            return;
+        }
+
+        // ============================================================
+        // Upgrade existing HQ monthly services
+        //
+        // This is required because older databases already contain
+        // ChurchService rows. Simply changing ChurchService.Create()
+        // above would not update those existing records.
+        // ============================================================
+
+        var holyCommunion =
+            existingServices.FirstOrDefault(service =>
+                !service.IsLocal &&
+                service.Category ==
+                    ServiceCategory.HolyCommunion);
+
+        if (holyCommunion is not null)
+        {
+            holyCommunion.SetMonthlyServicesDisplay(
+                showInMonthlyServices: true,
+                icon: "🍞");
+        }
+
+        var holyGhostService =
+            existingServices.FirstOrDefault(service =>
+                !service.IsLocal &&
+                service.Category ==
+                    ServiceCategory.HolyGhostService);
+
+        if (holyGhostService is not null)
+        {
+            holyGhostService.SetMonthlyServicesDisplay(
+                showInMonthlyServices: true,
+                icon: "🕊️");
+        }
+
+        var thanksgivingService =
+            existingServices.FirstOrDefault(service =>
+                !service.IsLocal &&
+                service.Category ==
+                    ServiceCategory.ThanksgivingService);
+
+        if (thanksgivingService is not null)
+        {
+            thanksgivingService.SetMonthlyServicesDisplay(
+                showInMonthlyServices: true,
+                icon: "🙏");
+        }
+
         await context.SaveChangesAsync(ct);
     }
 

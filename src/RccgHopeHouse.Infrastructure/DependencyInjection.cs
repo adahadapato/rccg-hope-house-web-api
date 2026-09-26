@@ -99,9 +99,7 @@ public static class DependencyInjection
             IContactUsRepository,
             ContactUsRepository>();
 
-        services.AddScoped<
-            IThemeOfTheYearRepository,
-            ThemeOfTheYearRepository>();
+        services.AddScoped<IThemeOfTheYearRepository, ThemeOfTheYearRepository>();
 
         services.AddScoped<
             IMemberRepository,
@@ -119,9 +117,10 @@ public static class DependencyInjection
             IGivingTypeRepository,
             GivingTypeRepository>();
 
-        services.AddScoped<
-            IOfferingRepository,
-            OfferingRepository>();
+        services.AddScoped<IOfferingRepository, OfferingRepository>();
+        services.AddScoped<IProphecyYearRepository, ProphecyYearRepository>();
+        services.AddScoped<IProphecyCategoryRepository, ProphecyCategoryRepository>();
+        services.AddScoped<IProphecyRepository, ProphecyRepository>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<

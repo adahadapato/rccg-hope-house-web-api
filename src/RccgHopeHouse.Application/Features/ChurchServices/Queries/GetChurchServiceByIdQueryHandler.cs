@@ -5,23 +5,45 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Queries;
 
-/// <summary>
-/// Handler for single service retrieval.
-/// </summary>
-public class GetChurchServiceByIdQueryHandler : IRequestHandler<GetChurchServiceByIdQuery, ChurchServiceDto>
+public class GetChurchServiceByIdQueryHandler
+    : IRequestHandler<GetChurchServiceByIdQuery, ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
 
-    public GetChurchServiceByIdQueryHandler(IChurchServiceRepository repository) => _repository = repository;
-
-    public async Task<ChurchServiceDto> Handle(GetChurchServiceByIdQuery request, CancellationToken ct)
+    public GetChurchServiceByIdQueryHandler(
+        IChurchServiceRepository repository)
     {
-        var service = await _repository.GetByIdAsync(request.Id, ct)
-            ?? throw new NotFoundException(nameof(Core.Entities.ChurchService), request.Id);
+        _repository = repository;
+    }
+
+    public async Task<ChurchServiceDto> Handle(
+        GetChurchServiceByIdQuery request,
+        CancellationToken ct)
+    {
+        var service = await _repository.GetByIdAsync(
+            request.Id,
+            ct)
+            ?? throw new NotFoundException(
+                nameof(Core.Entities.ChurchService),
+                request.Id);
 
         return new ChurchServiceDto(
-            service.Id, service.Name, service.Category, service.DayOfWeek, service.StartTime, service.EndTime,
-            service.Description, service.Location, service.ZoomId, service.ZoomPasscode, service.Recurrence,
-            service.DayOfMonth, service.IsLocal, service.IsActive, service.DisplayOrder);
+            Id: service.Id,
+            Name: service.Name,
+            Category: service.Category,
+            DayOfWeek: service.DayOfWeek,
+            StartTime: service.StartTime,
+            EndTime: service.EndTime,
+            Description: service.Description,
+            Location: service.Location,
+            ZoomId: service.ZoomId,
+            ZoomPasscode: service.ZoomPasscode,
+            Recurrence: service.Recurrence,
+            DayOfMonth: service.DayOfMonth,
+            IsLocal: service.IsLocal,
+            IsActive: service.IsActive,
+            DisplayOrder: service.DisplayOrder,
+            Icon: service.Icon,
+            ShowInMonthlyServices: service.ShowInMonthlyServices);
     }
 }
