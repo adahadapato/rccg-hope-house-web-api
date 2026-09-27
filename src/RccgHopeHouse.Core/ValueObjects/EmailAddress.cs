@@ -8,10 +8,10 @@ public partial record EmailAddress(string Value)
     public static EmailAddress Create(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email cannot be empty.", nameof(email));
+            throw new ArgumentException(ValidationMessages.Required, nameof(email));
 
         if (!ValidPattern().IsMatch(email))
-            throw new ArgumentException("Invalid email format.", nameof(email));
+            throw new ArgumentException(ValidationMessages.InvalidEmail, nameof(email));
 
         return new EmailAddress(email.Trim().ToLowerInvariant());
     }

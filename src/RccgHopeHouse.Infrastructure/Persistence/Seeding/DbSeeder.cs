@@ -16,7 +16,7 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(ApplicationDbContext context, 
                                         UserManager<ApplicationUser> userManager,
-                                        RoleManager<IdentityRole> roleManager,
+                                        RoleManager<ApplicationRole> roleManager,
                                         IConfiguration configuration, CancellationToken ct = default)
     {
         var theme2026 = await SeedThemeOfTheYearAsync(context, ct);
@@ -33,66 +33,192 @@ public static class DbSeeder
     /// <summary>
     /// Seeds the required roles and one real Admin account, using credentials
     /// from configuration (User Secrets locally, environment variables/secrets
-    /// manager in deployed environments) — never hardcoded. Idempotent: skips
-    /// role/user creation if they already exist.
+    /// manager in deployed environments).
+    ///
+    /// The role seeding is idempotent. Missing roles are created and the
+    /// descriptions of existing system roles are kept in sync.
     /// </summary>
     private static async Task SeedAdminAccountAsync(
-    UserManager<ApplicationUser> userManager,
-    RoleManager<IdentityRole> roleManager,
-    IConfiguration configuration)
+        UserManager<ApplicationUser> userManager,
+        RoleManager<ApplicationRole> roleManager,
+        IConfiguration configuration)
     {
-        Console.WriteLine("=== SeedAdminAccountAsync: STARTED ===");
+        Console.WriteLine(
+            "=== SeedAdminAccountAsync: STARTED ===");
 
-        string[] roles = ["Admin", "ContentEditor", "MediaManager", "PrayerTeam"];
-
-        foreach (var role in roles)
+        var roles = new[]
         {
-            if (!await roleManager.RoleExistsAsync(role))
+        new ApplicationRole
+        {
+            Name = Core.Constants.Roles.Admin,
+            Description =
+                "Full administrative access to the system."
+        },
+        new ApplicationRole
+        {
+            Name = Core.Constants.Roles.ContentEditor,
+            Description =
+                "Can create and manage website content."
+        },
+        new ApplicationRole
+        {
+            Name = Core.Constants.Roles.MediaManager,
+            Description =
+                "Can manage website images and media."
+        },
+        new ApplicationRole
+        {
+            Name = Core.Constants.Roles.PrayerTeam,
+            Description =
+                "Can access and manage prayer-related submissions."
+        }
+    };
+
+        foreach (var seedRole in roles)
+        {
+            var existingRole =
+                await roleManager.FindByNameAsync(
+                    seedRole.Name!);
+
+            if (existingRole is null)
             {
-                var roleResult = await roleManager.CreateAsync(new IdentityRole(role));
-                Console.WriteLine($"=== Created role '{role}': Succeeded={roleResult.Succeeded} ===");
+                var roleResult =
+                    await roleManager.CreateAsync(
+                        seedRole);
+
+                Console.WriteLine(
+                    $"=== Created role '{seedRole.Name}': " +
+                    $"Succeeded={roleResult.Succeeded} ===");
+
                 if (!roleResult.Succeeded)
-                    Console.WriteLine($"=== Role errors: {string.Join("; ", roleResult.Errors.Select(e => e.Description))} ===");
+                {
+                    var roleErrors =
+                        string.Join(
+                            "; ",
+                            roleResult.Errors.Select(
+                                error =>
+                                    error.Description));
+
+                    Console.WriteLine(
+                        $"=== Role errors: {roleErrors} ===");
+
+                    throw new InvalidOperationException(
+                        $"Failed to seed role '{seedRole.Name}': " +
+                        roleErrors);
+                }
+
+                continue;
+            }
+
+            if (!string.Equals(
+                existingRole.Description,
+                seedRole.Description,
+                StringComparison.Ordinal))
+            {
+                existingRole.Description =
+                    seedRole.Description;
+
+                var updateResult =
+                    await roleManager.UpdateAsync(
+                        existingRole);
+
+                if (!updateResult.Succeeded)
+                {
+                    var roleErrors =
+                        string.Join(
+                            "; ",
+                            updateResult.Errors.Select(
+                                error =>
+                                    error.Description));
+
+                    throw new InvalidOperationException(
+                        $"Failed to update role '{seedRole.Name}': " +
+                        roleErrors);
+                }
+
+                Console.WriteLine(
+                    $"=== Updated description for role " +
+                    $"'{seedRole.Name}' ===");
             }
         }
 
-        var adminEmail = configuration["SeedData:AdminEmail"];
-        var adminPassword = configuration["SeedData:AdminPassword"];
+        var adminEmail =
+            configuration["SeedData:AdminEmail"];
 
-        Console.WriteLine($"=== AdminEmail from config: '{adminEmail}' ===");
-        Console.WriteLine($"=== AdminPassword is set: {!string.IsNullOrWhiteSpace(adminPassword)} ===");
+        var adminPassword =
+            configuration["SeedData:AdminPassword"];
 
-        if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+        Console.WriteLine(
+            $"=== AdminEmail from config: '{adminEmail}' ===");
+
+        Console.WriteLine(
+            $"=== AdminPassword is set: " +
+            $"{!string.IsNullOrWhiteSpace(adminPassword)} ===");
+
+        if (string.IsNullOrWhiteSpace(adminEmail) ||
+            string.IsNullOrWhiteSpace(adminPassword))
         {
             throw new InvalidOperationException(
-                "SeedData:AdminEmail and SeedData:AdminPassword must be configured.");
+                "SeedData:AdminEmail and " +
+                "SeedData:AdminPassword must be configured.");
         }
 
-        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
-        Console.WriteLine($"=== Existing admin found: {existingAdmin != null} ===");
-        if (existingAdmin != null) return;
+        var existingAdmin =
+            await userManager.FindByEmailAsync(
+                adminEmail);
 
-        var admin = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            FirstName = "Admin",
-            LastName = "User",
-            IsActive = true,
-            EmailConfirmed = true
-        };
+        Console.WriteLine(
+            $"=== Existing admin found: " +
+            $"{existingAdmin != null} ===");
 
-        var result = await userManager.CreateAsync(admin, adminPassword);
-        Console.WriteLine($"=== CreateAsync Succeeded: {result.Succeeded} ===");
+        if (existingAdmin != null)
+            return;
+
+        var admin =
+            new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                FirstName = "Admin",
+                LastName = "User",
+                IsActive = true,
+                EmailConfirmed = true
+            };
+
+        var result =
+            await userManager.CreateAsync(
+                admin,
+                adminPassword);
+
+        Console.WriteLine(
+            $"=== CreateAsync Succeeded: " +
+            $"{result.Succeeded} ===");
+
         if (!result.Succeeded)
         {
-            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-            Console.WriteLine($"=== CreateAsync errors: {errors} ===");
-            throw new InvalidOperationException($"Failed to seed admin account: {errors}");
+            var errors =
+                string.Join(
+                    "; ",
+                    result.Errors.Select(
+                        error =>
+                            error.Description));
+
+            Console.WriteLine(
+                $"=== CreateAsync errors: " +
+                $"{errors} ===");
+
+            throw new InvalidOperationException(
+                $"Failed to seed admin account: " +
+                errors);
         }
 
-        await userManager.AddToRoleAsync(admin, "Admin");
-        Console.WriteLine("=== SeedAdminAccountAsync: COMPLETED SUCCESSFULLY ===");
+        await userManager.AddToRoleAsync(
+            admin,
+            "Admin");
+
+        Console.WriteLine(
+            "=== SeedAdminAccountAsync: " +
+            "COMPLETED SUCCESSFULLY ===");
     }
 
 

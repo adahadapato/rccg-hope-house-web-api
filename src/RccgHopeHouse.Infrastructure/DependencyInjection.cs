@@ -5,10 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using RccgHopeHouse.Application;
 using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Interfaces;
+using RccgHopeHouse.Core.Interfaces.Admin;
 using RccgHopeHouse.Infrastructure.Bible;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories;
+using RccgHopeHouse.Infrastructure.Persistence.Repositories.Admin;
 using RccgHopeHouse.Infrastructure.Services;
 
 namespace RccgHopeHouse.Infrastructure;
@@ -64,8 +66,9 @@ public static class DependencyInjection
 
                 options.Lockout.MaxFailedAccessAttempts = 5;
             })
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddRoles<ApplicationRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
         // 4. Token service
         services.AddSingleton<JwtTokenService>();
@@ -99,7 +102,9 @@ public static class DependencyInjection
             IContactUsRepository,
             ContactUsRepository>();
 
-        services.AddScoped<IThemeOfTheYearRepository, ThemeOfTheYearRepository>();
+        services.AddScoped<
+            IThemeOfTheYearRepository,
+            ThemeOfTheYearRepository>();
 
         services.AddScoped<
             IMemberRepository,
@@ -117,10 +122,25 @@ public static class DependencyInjection
             IGivingTypeRepository,
             GivingTypeRepository>();
 
-        services.AddScoped<IOfferingRepository, OfferingRepository>();
-        services.AddScoped<IProphecyYearRepository, ProphecyYearRepository>();
-        services.AddScoped<IProphecyCategoryRepository, ProphecyCategoryRepository>();
-        services.AddScoped<IProphecyRepository, ProphecyRepository>();
+        services.AddScoped<
+            IOfferingRepository,
+            OfferingRepository>();
+
+        services.AddScoped<
+            IProphecyYearRepository,
+            ProphecyYearRepository>();
+
+        services.AddScoped<
+            IProphecyCategoryRepository,
+            ProphecyCategoryRepository>();
+
+        services.AddScoped<
+            IProphecyRepository,
+            ProphecyRepository>();
+
+        services.AddScoped<
+            IAdminRepository,
+            AdminRepository>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<

@@ -6,7 +6,9 @@
     <Nullable>enable</Nullable>
     <SixLaborsLicenseKey>GPL</SixLaborsLicenseKey>
   </PropertyGroup>
-
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.76.0.4262" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.17.1" />

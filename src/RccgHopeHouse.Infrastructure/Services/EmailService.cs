@@ -7,7 +7,8 @@ namespace RccgHopeHouse.Infrastructure.Services;
 
 /// <summary>
 /// Implements <see cref="IEmailService"/> using SMTP.
-/// Suitable for transactional emails, admin alerts, and pastoral notifications.
+/// Suitable for transactional emails, admin alerts,
+/// and pastoral notifications.
 /// </summary>
 public class EmailService : IEmailService
 {
@@ -15,65 +16,157 @@ public class EmailService : IEmailService
     private readonly MailAddress _fromAddress;
 
     /// <summary>
-    /// Initializes the SMTP client with configuration settings.
+    /// Initializes the SMTP client using the
+    /// EmailSettings configuration section.
     /// </summary>
-    public EmailService(IConfiguration configuration)
+    public EmailService(
+        IConfiguration configuration)
     {
-        var host = configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-        var port = int.Parse(configuration["Email:SmtpPort"] ?? "587");
-        var username = configuration["Email:Username"];
-        var password = configuration["Email:Password"];
-        var fromEmail = configuration["Email:FromAddress"] ?? "noreply@rccghopehouse.org.uk";
-        var fromName = configuration["Email:FromName"] ?? "RCCG Hope House";
+        var host =
+            configuration[
+                "EmailSettings:SmtpHost"]
+            ?? "smtp.gmail.com";
 
-        _smtpClient = new SmtpClient(host, port)
+        var portValue =
+            configuration[
+                "EmailSettings:SmtpPort"]
+            ?? "587";
+
+        if (!int.TryParse(
+                portValue,
+                out var port))
         {
-            Credentials = new NetworkCredential(username, password),
-            EnableSsl = true,
-            DeliveryMethod = SmtpDeliveryMethod.Network,
-            UseDefaultCredentials = false
-        };
+            throw new InvalidOperationException(
+                "EmailSettings:SmtpPort must be a valid number.");
+        }
 
-        _fromAddress = new MailAddress(fromEmail, fromName);
+        var username =
+            configuration[
+                "EmailSettings:Username"];
+
+        var password =
+            configuration[
+                "EmailSettings:Password"];
+
+        var fromEmail =
+            configuration[
+                "EmailSettings:FromAddress"]
+            ?? "noreply@rccghopehouse.org.uk";
+
+        var fromName =
+            configuration[
+                "EmailSettings:FromName"]
+            ?? "RCCG Hope House";
+
+        _smtpClient =
+            new SmtpClient(
+                host,
+                port)
+            {
+                EnableSsl = true,
+                DeliveryMethod =
+                    SmtpDeliveryMethod.Network,
+                UseDefaultCredentials =
+                    false
+            };
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                username) &&
+            !string.IsNullOrWhiteSpace(
+                password)
+        )
+        {
+            _smtpClient.Credentials =
+                new NetworkCredential(
+                    username,
+                    password);
+        }
+
+        _fromAddress =
+            new MailAddress(
+                fromEmail,
+                fromName);
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Wraps SMTP calls in try/catch to return EmailResult instead of throwing.
-    /// Prevents unhandled exceptions from breaking HTTP requests during fire-and-forget notifications.
-    /// </remarks>
-    public async Task<EmailResult> SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
+    public async Task<EmailResult> SendAsync(
+        string to,
+        string subject,
+        string htmlBody,
+        CancellationToken ct = default)
     {
         try
         {
-            var message = new MailMessage(_fromAddress, new MailAddress(to))
-            {
-                Subject = subject,
-                Body = htmlBody,
-                IsBodyHtml = true
-            };
+            using var message =
+                new MailMessage
+                {
+                    From = _fromAddress,
+                    Subject = subject,
+                    Body = htmlBody,
+                    IsBodyHtml = true
+                };
 
-            await _smtpClient.SendMailAsync(message, ct);
-            return new EmailResult(true, Guid.NewGuid().ToString(), null);
+            message.To.Add(
+                new MailAddress(to));
+
+            await _smtpClient.SendMailAsync(
+                message,
+                ct);
+
+            return new EmailResult(
+                IsSuccess: true,
+                MessageId:
+                    Guid.NewGuid()
+                        .ToString(),
+                ErrorMessage: null);
+        }
+        catch (OperationCanceledException)
+            when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            return new EmailResult(false, null, ex.Message);
+            return new EmailResult(
+                IsSuccess: false,
+                MessageId: null,
+                ErrorMessage:
+                    ex.Message);
         }
     }
 
     /// <inheritdoc />
     /// <remarks>
-    /// Sends bulk emails sequentially to respect SMTP rate limits.
-    /// For high-volume newsletters, consider migrating to SendGrid/Mailgun API.
+    /// Sends bulk emails sequentially to respect
+    /// SMTP rate limits.
     /// </remarks>
-    public async Task<EmailResult> SendBulkAsync(IEnumerable<string> recipients, string subject, string htmlBody, CancellationToken ct = default)
+    public async Task<EmailResult> SendBulkAsync(
+        IEnumerable<string> recipients,
+        string subject,
+        string htmlBody,
+        CancellationToken ct = default)
     {
-        foreach (var to in recipients)
+        foreach (var recipient in recipients)
         {
-            var result = await SendAsync(to, subject, htmlBody, ct);
-            if (!result.IsSuccess) return result;
+            ct.ThrowIfCancellationRequested();
+
+            var result =
+                await SendAsync(
+                    recipient,
+                    subject,
+                    htmlBody,
+                    ct);
+
+            if (!result.IsSuccess)
+            {
+                return result;
+            }
         }
-        return new EmailResult(true, "bulk-sent", null);
+
+        return new EmailResult(
+            IsSuccess: true,
+            MessageId: "bulk-sent",
+            ErrorMessage: null);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using RccgHopeHouse.Application.Features.Admin.Users.Commands;
 using RccgHopeHouse.Application.Features.Auth.Commands;
 using RccgHopeHouse.Application.Features.Auth.Dtos;
 
@@ -7,43 +8,79 @@ namespace RccgHopeHouse.Api.Endpoints.Auth;
 
 public static class AuthEndpoints
 {
-    public static RouteGroupBuilder MapAuthEndpoints(this RouteGroupBuilder group)
+    public static RouteGroupBuilder MapAuthEndpoints(
+        this RouteGroupBuilder group)
     {
-        var auth = group.MapGroup("/auth").WithTags("Authentication");
+        var auth = group
+            .MapGroup("/auth")
+            .WithTags("Authentication");
 
         auth.MapPost("/login", LoginAsync)
-            .WithSummary("Authenticate user and return JWT tokens")
-            .WithDescription("Validates email/password and returns access/refresh tokens.")
+            .WithSummary(
+                "Authenticate user and return JWT tokens")
+            .WithDescription(
+                "Validates email/password and returns access/refresh tokens.")
             .WithName("Login")
-            .Produces<AuthTokensDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .Produces<AuthTokensDto>(
+                StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status400BadRequest)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized)
             .RequireRateLimiting("Strict")
             .AllowAnonymous();
 
         auth.MapGet("/validate", ValidateAdminAsync)
-            .WithSummary("Validate the current administrator access token")
+            .WithSummary(
+                "Validate the current administrator access token")
             .WithName("ValidateAdminToken")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .RequireAuthorization(policy => policy.RequireRole("Admin"));
+            .Produces(
+                StatusCodes.Status204NoContent)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized)
+            .ProducesProblem(
+                StatusCodes.Status403Forbidden)
+            .RequireAuthorization(
+                policy =>
+                    policy.RequireRole("Admin"));
 
         auth.MapPost("/refresh", RefreshTokenAsync)
-            .WithSummary("Exchange refresh token for new access token")
+            .WithSummary(
+                "Exchange refresh token for new access token")
             .WithName("RefreshToken")
-            .Produces<AuthTokensDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .Produces<AuthTokensDto>(
+                StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status400BadRequest)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized)
             .RequireRateLimiting("Strict")
             .AllowAnonymous();
 
         auth.MapPost("/logout", LogoutAsync)
-            .WithSummary("Invalidate refresh token (logout)")
+            .WithSummary(
+                "Invalidate refresh token (logout)")
             .WithName("Logout")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .Produces(
+                StatusCodes.Status204NoContent)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized)
             .RequireAuthorization();
+
+        auth.MapPost(
+                "/confirm-email",
+                ConfirmEmailAsync)
+            .WithSummary(
+                "Confirm a user's email address")
+            .WithDescription(
+                "Validates an email confirmation token and marks the user's email address as confirmed.")
+            .WithName("ConfirmEmail")
+            .Produces(
+                StatusCodes.Status204NoContent)
+            .ProducesProblem(
+                StatusCodes.Status400BadRequest)
+            .RequireRateLimiting("Strict")
+            .AllowAnonymous();
 
         return group;
     }
@@ -53,8 +90,13 @@ public static class AuthEndpoints
         [FromServices] IMediator mediator,
         CancellationToken ct)
     {
-        var tokens = await mediator.Send(
-            new LoginCommand(request.Email, request.Password), ct);
+        var tokens =
+            await mediator.Send(
+                new LoginCommand(
+                    request.Email,
+                    request.Password),
+                ct);
+
         return TypedResults.Ok(tokens);
     }
 
@@ -66,8 +108,12 @@ public static class AuthEndpoints
         [FromServices] IMediator mediator,
         CancellationToken ct)
     {
-        var tokens = await mediator.Send(
-            new RefreshTokenCommand(request.RefreshToken), ct);
+        var tokens =
+            await mediator.Send(
+                new RefreshTokenCommand(
+                    request.RefreshToken),
+                ct);
+
         return TypedResults.Ok(tokens);
     }
 
@@ -77,11 +123,38 @@ public static class AuthEndpoints
         CancellationToken ct)
     {
         await mediator.Send(
-            new RevokeTokenCommand(request.RefreshToken), ct);
+            new RevokeTokenCommand(
+                request.RefreshToken),
+            ct);
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> ConfirmEmailAsync(
+        [FromBody] ConfirmEmailRequest request,
+        [FromServices] IMediator mediator,
+        CancellationToken ct)
+    {
+        await mediator.Send(
+            new ConfirmAdminUserEmailCommand(
+                request.UserId,
+                request.Token),
+            ct);
+
         return TypedResults.NoContent();
     }
 }
 
-public record LoginRequest(string Email, string Password);
-public record RefreshTokenRequest(string RefreshToken);
-public record LogoutRequest(string RefreshToken);
+public sealed record LoginRequest(
+    string Email,
+    string Password);
+
+public sealed record RefreshTokenRequest(
+    string RefreshToken);
+
+public sealed record LogoutRequest(
+    string RefreshToken);
+
+public sealed record ConfirmEmailRequest(
+    string UserId,
+    string Token);

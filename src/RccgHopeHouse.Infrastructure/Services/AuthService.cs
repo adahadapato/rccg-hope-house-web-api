@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
 using RccgHopeHouse.Core.Results;
 using RccgHopeHouse.Infrastructure.Identity;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,24 +11,23 @@ namespace RccgHopeHouse.Infrastructure.Services;
 
 /// <summary>
 /// Implements <see cref="IAuthService"/> using ASP.NET Core Identity
-/// and JWT token generation.
-/// Handles credential validation, token issuance, and refresh rotation.
+/// and JWT access tokens with opaque refresh tokens.
 /// </summary>
 public class AuthService : IAuthService
 {
+    private static readonly TimeSpan RefreshTokenLifetime =
+        TimeSpan.FromDays(7);
+
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IConfiguration _configuration;
     private readonly JwtTokenService _tokenService;
     private readonly IDistributedCache _cache;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
-        IConfiguration configuration,
         JwtTokenService tokenService,
         IDistributedCache cache)
     {
         _userManager = userManager;
-        _configuration = configuration;
         _tokenService = tokenService;
         _cache = cache;
     }
@@ -43,125 +38,261 @@ public class AuthService : IAuthService
         string password,
         CancellationToken ct = default)
     {
-        var user = await _userManager.FindByEmailAsync(email);
+        ct.ThrowIfCancellationRequested();
 
-        if (
-            user == null ||
+        var user =
+            await _userManager.FindByEmailAsync(email);
+
+        // Keep invalid credentials and inactive accounts
+        // behind the same generic authentication response.
+        if (user is null ||
             !user.IsActive ||
             !await _userManager.CheckPasswordAsync(
                 user,
                 password))
         {
-            return new AuthResult(
-                IsSuccess: false,
-                AccessToken: null,
-                RefreshToken: null,
-                ExpiresAt: null,
-                Role: null,
-                ErrorMessage: "Invalid email or password.",
-                UserName: null,
-                Name: null,
-                Email: null);
+            return CreateFailedLoginResult();
+        }
+
+        // Credentials are valid, but the account must verify
+        // its email address before authentication can complete.
+        if (!user.EmailConfirmed)
+        {
+            return CreateEmailNotConfirmedResult(user);
         }
 
         var roles =
             await _userManager.GetRolesAsync(user);
 
         var tokens =
-            GenerateJwtTokens(user, roles);
+            _tokenService.GenerateTokens(
+                user,
+                roles);
 
-        var fullName = GetFullName(user);
+        await StoreRefreshTokenAsync(
+            tokens.RefreshToken,
+            user.Id,
+            ct);
 
-        return new AuthResult(
-            IsSuccess: true,
-            AccessToken: tokens.AccessToken,
-            RefreshToken: tokens.RefreshToken,
-            ExpiresAt: tokens.ExpiresAt,
-            Role: roles.FirstOrDefault() ?? "Member",
-            ErrorMessage: string.Empty,
-            UserName: user.UserName,
-            Name: fullName,
-            Email: user.Email);
+        return CreateSuccessfulAuthResult(
+            user,
+            roles,
+            tokens.AccessToken,
+            tokens.RefreshToken,
+            tokens.ExpiresAt);
     }
 
     /// <inheritdoc />
-    /// <summary>
-    /// Validates a refresh token, checks revocation status,
-    /// and issues a new token pair.
-    /// </summary>
     public async Task<AuthResult> RefreshTokenAsync(
         string refreshToken,
         CancellationToken ct = default)
     {
-        // 1. Validate refresh token signature and extract claims
-        var principal =
-            _tokenService.GetPrincipalFromExpiredToken(
-                refreshToken);
+        ct.ThrowIfCancellationRequested();
 
-        if (principal?.Identity?.IsAuthenticated != true)
+        if (string.IsNullOrWhiteSpace(refreshToken))
         {
             throw new UnauthorizedAccessException(
-                "Invalid refresh token signature.");
+                "Refresh token is required.");
         }
 
-        // 2. Extract user identifier from claims
-        var userId = principal
-            .FindFirst(ClaimTypes.NameIdentifier)
-            ?.Value;
+        var cacheKey =
+            GetRefreshTokenCacheKey(refreshToken);
 
-        if (
-            string.IsNullOrWhiteSpace(userId) ||
-            !Guid.TryParse(userId, out var userGuid))
+        var userId =
+            await _cache.GetStringAsync(
+                cacheKey,
+                ct);
+
+        if (string.IsNullOrWhiteSpace(userId))
         {
             throw new UnauthorizedAccessException(
-                "Refresh token missing user identifier.");
+                "The refresh token is invalid, expired, or revoked.");
         }
 
-        // 3. Check if token has been revoked
-        if (await IsTokenRevokedAsync(
-            refreshToken,
-            ct))
-        {
-            throw new UnauthorizedAccessException(
-                "Refresh token has been revoked.");
-        }
-
-        // 4. Load user and verify account status
         var user =
-            await _userManager.FindByIdAsync(
-                userGuid.ToString());
+            await _userManager.FindByIdAsync(userId);
 
-        if (user == null || !user.IsActive)
+        if (user is null)
         {
+            await _cache.RemoveAsync(
+                cacheKey,
+                ct);
+
             throw new NotFoundException(
                 nameof(ApplicationUser),
-                userGuid);
+                userId);
         }
 
-        // 5. Get user roles for new token claims
+        if (!user.IsActive)
+        {
+            await _cache.RemoveAsync(
+                cacheKey,
+                ct);
+
+            throw new UnauthorizedAccessException(
+                "This account is inactive.");
+        }
+
+        // If the email address has changed since the refresh
+        // token was issued, UpdateUserAsync resets
+        // EmailConfirmed to false. Do not allow that existing
+        // refresh token to bypass the new verification requirement.
+        if (!user.EmailConfirmed)
+        {
+            await _cache.RemoveAsync(
+                cacheKey,
+                ct);
+
+            throw new UnauthorizedAccessException(
+                "Please verify your email address before signing in.");
+        }
+
         var roles =
             await _userManager.GetRolesAsync(user);
 
-        // 6. Generate new token pair
-        var (
-            accessToken,
-            newRefreshToken,
-            expiresAt
-        ) = _tokenService.GenerateTokens(
+        var tokens =
+            _tokenService.GenerateTokens(
+                user,
+                roles);
+
+        // Rotate the refresh token.
+        // The old token becomes unusable before the new token is stored.
+        await _cache.RemoveAsync(
+            cacheKey,
+            ct);
+
+        await StoreRefreshTokenAsync(
+            tokens.RefreshToken,
+            user.Id,
+            ct);
+
+        return CreateSuccessfulAuthResult(
             user,
-            roles);
+            roles,
+            tokens.AccessToken,
+            tokens.RefreshToken,
+            tokens.ExpiresAt);
+    }
 
-        var fullName = GetFullName(user);
+    /// <inheritdoc />
+    public async Task<bool> RevokeTokenAsync(
+        string refreshToken,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return false;
 
+        var cacheKey =
+            GetRefreshTokenCacheKey(refreshToken);
+
+        await _cache.RemoveAsync(
+            cacheKey,
+            ct);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Stores the association between a hashed refresh token
+    /// and the user who owns it.
+    /// </summary>
+    private async Task StoreRefreshTokenAsync(
+        string refreshToken,
+        string userId,
+        CancellationToken ct)
+    {
+        var cacheKey =
+            GetRefreshTokenCacheKey(refreshToken);
+
+        var options =
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow =
+                    RefreshTokenLifetime
+            };
+
+        await _cache.SetStringAsync(
+            cacheKey,
+            userId,
+            options,
+            ct);
+    }
+
+    /// <summary>
+    /// Creates the cache key for a refresh token.
+    /// The raw refresh token is never stored as the cache key.
+    /// </summary>
+    private static string GetRefreshTokenCacheKey(
+        string refreshToken)
+    {
+        var tokenBytes =
+            Encoding.UTF8.GetBytes(refreshToken);
+
+        var hashBytes =
+            SHA256.HashData(tokenBytes);
+
+        var hash =
+            Convert.ToHexString(hashBytes);
+
+        return $"refresh_token:{hash}";
+    }
+
+    /// <summary>
+    /// Creates a standard failed authentication result.
+    /// </summary>
+    private static AuthResult CreateFailedLoginResult()
+    {
+        return new AuthResult(
+            IsSuccess: false,
+            AccessToken: null,
+            RefreshToken: null,
+            ExpiresAt: null,
+            Role: null,
+            ErrorMessage: "Invalid email or password.",
+            UserName: null,
+            Name: null,
+            Email: null);
+    }
+
+    /// <summary>
+    /// Creates an authentication result for a valid account
+    /// whose email address has not yet been confirmed.
+    /// </summary>
+    private static AuthResult CreateEmailNotConfirmedResult(
+        ApplicationUser user)
+    {
+        return new AuthResult(
+            IsSuccess: false,
+            AccessToken: null,
+            RefreshToken: null,
+            ExpiresAt: null,
+            Role: null,
+            ErrorMessage:
+                "Please verify your email address before signing in.",
+            UserName: user.UserName,
+            Name: GetFullName(user),
+            Email: user.Email);
+    }
+
+    /// <summary>
+    /// Creates a successful authentication result.
+    /// </summary>
+    private static AuthResult CreateSuccessfulAuthResult(
+        ApplicationUser user,
+        IList<string> roles,
+        string accessToken,
+        string refreshToken,
+        DateTime expiresAt)
+    {
         return new AuthResult(
             IsSuccess: true,
             AccessToken: accessToken,
-            RefreshToken: newRefreshToken,
+            RefreshToken: refreshToken,
             ExpiresAt: expiresAt,
             Role: roles.FirstOrDefault() ?? "Member",
             ErrorMessage: string.Empty,
             UserName: user.UserName,
-            Name: fullName,
+            Name: GetFullName(user),
             Email: user.Email);
     }
 
@@ -176,136 +307,11 @@ public class AuthService : IAuthService
             " ",
             new[]
             {
-            user.FirstName,
-            user.LastName
+                user.FirstName,
+                user.LastName
             }
             .Where(name =>
                 !string.IsNullOrWhiteSpace(name))
-            .Select(name => name!.Trim()));
-    }
-
-    /// <summary>
-    /// Checks if a refresh token has been revoked
-    /// by looking up its hash in the distributed cache.
-    /// </summary>
-    private async Task<bool> IsTokenRevokedAsync(
-        string refreshToken,
-        CancellationToken ct)
-    {
-        using var sha256 = SHA256.Create();
-
-        var hashBytes =
-            sha256.ComputeHash(
-                Encoding.UTF8.GetBytes(
-                    refreshToken));
-
-        var hash =
-            Convert.ToBase64String(hashBytes);
-
-        var cacheKey =
-            $"revoked_token:{hash}";
-
-        var cached =
-            await _cache.GetStringAsync(
-                cacheKey,
-                ct);
-
-        return !string.IsNullOrWhiteSpace(cached);
-    }
-
-    /// <inheritdoc />
-    public Task<bool> RevokeTokenAsync(
-        string refreshToken,
-        CancellationToken ct = default)
-    {
-        // ⚠️ STUB:
-        // This currently does not write the token
-        // hash to the distributed cache.
-        //
-        // Therefore logout does not yet invalidate
-        // the refresh token server-side.
-        return Task.FromResult(true);
-    }
-
-    /// <summary>
-    /// Generates access and refresh JWT tokens
-    /// with configured expiry and claims.
-    /// </summary>
-    private (
-        string AccessToken,
-        string RefreshToken,
-        DateTime ExpiresAt
-    ) GenerateJwtTokens(
-        ApplicationUser user,
-        IList<string> roles)
-    {
-        var fullName = GetFullName(user);
-
-        var claims = new List<Claim>
-        {
-            new(
-                ClaimTypes.NameIdentifier,
-                user.Id),
-
-            new(
-                ClaimTypes.Email,
-                user.Email ?? string.Empty),
-
-            new(
-                ClaimTypes.Name,
-                fullName),
-
-            new(
-                "iat",
-                DateTimeOffset.UtcNow
-                    .ToUnixTimeSeconds()
-                    .ToString())
-        };
-
-        claims.AddRange(
-            roles.Select(
-                role =>
-                    new Claim(
-                        ClaimTypes.Role,
-                        role)));
-
-        var key =
-            new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    _configuration["Jwt:Key"]!));
-
-        var creds =
-            new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256);
-
-        var expiry =
-            DateTime.UtcNow.AddMinutes(
-                double.Parse(
-                    _configuration[
-                        "Jwt:ExpiryMinutes"
-                    ] ?? "60"));
-
-        var token =
-            new JwtSecurityToken(
-                _configuration["Jwt:Issuer"],
-                _configuration["Jwt:Audience"],
-                claims,
-                expires: expiry,
-                signingCredentials: creds);
-
-        var accessToken =
-            new JwtSecurityTokenHandler()
-                .WriteToken(token);
-
-        var refreshToken =
-            Convert.ToBase64String(
-                RandomNumberGenerator
-                    .GetBytes(64));
-
-        return (
-            accessToken,
-            refreshToken,
-            expiry);
+            .Select(name => name.Trim()));
     }
 }

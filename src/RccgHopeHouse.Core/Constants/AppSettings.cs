@@ -17,19 +17,30 @@ public static class AppSettings
     public static class Storage
     {
         public const string Provider = "Storage:Provider";
-        public const string AzureBlobConnectionString = "Storage:AzureBlob:ConnectionString";
-        public const string AzureBlobContainer = "Storage:AzureBlob:ContainerName";
+        public const string AzureBlobConnectionString =
+            "Storage:AzureBlob:ConnectionString";
+        public const string AzureBlobContainer =
+            "Storage:AzureBlob:ContainerName";
     }
 
     public static class YouTube
     {
         public const string ApiKey = "YouTube:ApiKey";
-        public const string ThanksgivingPlaylistId = "YouTube:ThanksgivingPlaylistId";
+        public const string ThanksgivingPlaylistId =
+            "YouTube:ThanksgivingPlaylistId";
     }
 
     public static class ConnectionStrings
     {
-        public const string Default = "ConnectionStrings:DefaultConnection";
-        public const string Redis = "ConnectionStrings:Redis";
+        public const string Default =
+            "ConnectionStrings:DefaultConnection";
+        public const string Redis =
+            "ConnectionStrings:Redis";
+    }
+
+    public static class Application
+    {
+        public const string AdminDashboardUrl =
+            "AppSettings:AdminDashboardUrl";
     }
 }

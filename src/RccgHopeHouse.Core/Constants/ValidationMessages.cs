@@ -9,6 +9,7 @@ public static class ValidationMessages
     public const string Required = "{PropertyName} is required.";
     public const string MaxLength = "{PropertyName} cannot exceed {MaxLength} characters.";
     public const string InvalidEmail = "Invalid email address format.";
+    public const string InvalidPhoneNumber = "Invalid phone number format.";
     public const string InvalidUrl = "Invalid URL format.";
     public const string InvalidYouTubeUrl = "Please enter a valid YouTube URL (youtube.com or youtu.be).";
     public const string FileTooLarge = "File size cannot exceed {MaxSize}MB.";

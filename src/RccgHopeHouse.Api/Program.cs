@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Api;
+using RccgHopeHouse.Api.Endpoints.Admin;
 using RccgHopeHouse.Api.Endpoints.Auth;
 using RccgHopeHouse.Api.Endpoints.Bibles;
 using RccgHopeHouse.Api.Endpoints.ChurchInfo;
@@ -44,7 +45,7 @@ var app = builder.Build();
 // ==================== Middleware Pipeline ====================
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    //app.UseDeveloperExceptionPage();
 
     app.UseSwagger();
 
@@ -67,10 +68,12 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler();
+    //app.UseExceptionHandler();
     app.UseHsts();
 }
-
+// Use the application's central exception handler
+// in every environment.
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 // ==================== Static Files ====================
@@ -101,6 +104,7 @@ var api =
     app.MapGroup("/api");
 
 api.MapAuthEndpoints();
+api.MapAdminEndpoints();
 api.MapPastorPostEndpoints();
 api.MapGalleryEndpoints();
 api.MapGalleryCategoryEndpoints();
@@ -142,7 +146,7 @@ using (var scope = app.Services.CreateScope())
     var roleManager =
         scope.ServiceProvider
             .GetRequiredService<
-                RoleManager<IdentityRole>>();
+                RoleManager<ApplicationRole>>();
 
     // Applies any pending EF Core migrations.
     await db.Database.MigrateAsync();

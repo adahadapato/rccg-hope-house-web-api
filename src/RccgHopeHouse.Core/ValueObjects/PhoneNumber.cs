@@ -12,11 +12,11 @@ namespace RccgHopeHouse.Core.ValueObjects
         public static PhoneNumber Create(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
-                throw new ArgumentException("Phone number cannot be empty.", nameof(phoneNumber));
+                throw new ArgumentException(ValidationMessages.Required, nameof(phoneNumber));
 
             var cleaned = phoneNumber.Trim();
             if (!ValidPattern().IsMatch(cleaned))
-                throw new ArgumentException("Invalid phone number format.", nameof(phoneNumber));
+                throw new ArgumentException(ValidationMessages.InvalidPhoneNumber, nameof(phoneNumber));
 
             return new PhoneNumber(cleaned);
         }
