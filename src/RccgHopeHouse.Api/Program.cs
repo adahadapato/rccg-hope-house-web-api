@@ -71,8 +71,6 @@ else
     app.UseHsts();
 }
 
-app.UseRateLimiter();
-
 app.UseHttpsRedirection();
 
 // ==================== Static Files ====================
@@ -91,6 +89,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseCors("AllowClients");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 
