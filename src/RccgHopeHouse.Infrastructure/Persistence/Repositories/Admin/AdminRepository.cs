@@ -556,8 +556,8 @@ public class AdminRepository : IAdminRepository
     }
 
     private static AdminUser MapUser(
-        ApplicationUser user,
-        IEnumerable<string> roles)
+      ApplicationUser user,
+      IEnumerable<string> roles)
     {
         return new AdminUser
         {
@@ -574,6 +574,8 @@ public class AdminRepository : IAdminRepository
                 user.EmailConfirmed,
             TwoFactorEnabled =
                 user.TwoFactorEnabled,
+            ProfileImagePath =
+                user.ProfileImagePath,
             Roles = roles
                 .OrderBy(role => role)
                 .ToArray()

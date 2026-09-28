@@ -16,5 +16,6 @@ public sealed class AdminUser
     public DateTime? LastLoginAt { get; init; }
     public bool EmailConfirmed { get; init; }
     public bool TwoFactorEnabled { get; init; }
+    public string? ProfileImagePath { get; init; }
     public IReadOnlyList<string> Roles { get; init; } = [];
 }

@@ -22,8 +22,9 @@ public sealed class GetAdminUsersQueryHandler
         GetAdminUsersQuery request,
         CancellationToken cancellationToken)
     {
-        var users = await _adminRepository.GetUsersAsync(
-            cancellationToken);
+        var users =
+            await _adminRepository.GetUsersAsync(
+                cancellationToken);
 
         return users
             .Select(user => new AdminUserDto(
@@ -37,6 +38,7 @@ public sealed class GetAdminUsersQueryHandler
                 user.TwoFactorEnabled,
                 user.IsActive,
                 user.LastLoginAt,
+                user.ProfileImagePath,
                 user.Roles))
             .ToList();
     }

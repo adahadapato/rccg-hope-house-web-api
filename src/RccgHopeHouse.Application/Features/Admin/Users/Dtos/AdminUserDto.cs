@@ -15,4 +15,5 @@ public sealed record AdminUserDto(
     bool TwoFactorEnabled,
     bool IsActive,
     DateTime? LastLoginAt,
+    string? ProfileImagePath,
     IReadOnlyList<string> Roles);
