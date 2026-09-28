@@ -13,4 +13,6 @@ public record AuthResult(
     string? ErrorMessage,
     string? UserName,
     string? Name,
-    string? Email);
+    string? Email,
+    bool RequiresTwoFactor = false,
+    string? TwoFactorChallengeToken = null);

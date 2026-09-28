@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Api;
+using RccgHopeHouse.Api.Endpoints.Accounts;
 using RccgHopeHouse.Api.Endpoints.Admin;
+using RccgHopeHouse.Api.Endpoints.AnnualPrayers;
 using RccgHopeHouse.Api.Endpoints.Auth;
 using RccgHopeHouse.Api.Endpoints.Bibles;
+using RccgHopeHouse.Api.Endpoints.ChurchEvents;
 using RccgHopeHouse.Api.Endpoints.ChurchInfo;
 using RccgHopeHouse.Api.Endpoints.ChurchServices;
 using RccgHopeHouse.Api.Endpoints.ContactUs;
@@ -120,6 +123,9 @@ api.MapOfferingEndpoints();
 api.MapApiBibleEndpoints();
 api.MapProphecyEndpoints();
 api.MapThemeOfTheYearEndpoints();
+api.MapAnnualPrayerEndpoints();
+api.MapChurchEventEndpoints();
+api.MapAccountEndpoints();  
 
 app.MapGet(
         "/health",

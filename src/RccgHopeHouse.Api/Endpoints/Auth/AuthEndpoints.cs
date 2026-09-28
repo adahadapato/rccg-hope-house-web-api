@@ -19,8 +19,25 @@ public static class AuthEndpoints
             .WithSummary(
                 "Authenticate user and return JWT tokens")
             .WithDescription(
-                "Validates email/password and returns access/refresh tokens.")
+                "Validates email/password. If two-factor authentication is enabled, returns a short-lived two-factor challenge instead of JWT tokens.")
             .WithName("Login")
+            .Produces<AuthTokensDto>(
+                StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status400BadRequest)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized)
+            .RequireRateLimiting("Strict")
+            .AllowAnonymous();
+
+        auth.MapPost(
+                "/two-factor",
+                CompleteTwoFactorLoginAsync)
+            .WithSummary(
+                "Complete two-factor authentication")
+            .WithDescription(
+                "Validates an authenticator or recovery code for a pending login challenge and returns JWT access/refresh tokens.")
+            .WithName("CompleteTwoFactorLogin")
             .Produces<AuthTokensDto>(
                 StatusCodes.Status200OK)
             .ProducesProblem(
@@ -100,6 +117,22 @@ public static class AuthEndpoints
         return TypedResults.Ok(tokens);
     }
 
+    private static async Task<IResult> CompleteTwoFactorLoginAsync(
+        [FromBody] CompleteTwoFactorLoginRequest request,
+        [FromServices] IMediator mediator,
+        CancellationToken ct)
+    {
+        var tokens =
+            await mediator.Send(
+                new CompleteTwoFactorLoginCommand(
+                    request.ChallengeToken,
+                    request.VerificationCode,
+                    request.UseRecoveryCode),
+                ct);
+
+        return TypedResults.Ok(tokens);
+    }
+
     private static IResult ValidateAdminAsync() =>
         TypedResults.NoContent();
 
@@ -148,6 +181,11 @@ public static class AuthEndpoints
 public sealed record LoginRequest(
     string Email,
     string Password);
+
+public sealed record CompleteTwoFactorLoginRequest(
+    string ChallengeToken,
+    string VerificationCode,
+    bool UseRecoveryCode);
 
 public sealed record RefreshTokenRequest(
     string RefreshToken);

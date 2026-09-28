@@ -1,8 +1,9 @@
 ﻿namespace RccgHopeHouse.Application.Features.Auth.Dtos;
 
 /// <summary>
-/// Response DTO containing JWT access/refresh tokens,
-/// expiry information, and authenticated user details.
+/// Response DTO containing authentication state,
+/// JWT access/refresh tokens, expiry information,
+/// and authenticated user details.
 /// </summary>
 public record AuthTokensDto(
     string AccessToken,
@@ -11,4 +12,6 @@ public record AuthTokensDto(
     string Role,
     string UserName,
     string Name,
-    string Email);
+    string Email,
+    bool RequiresTwoFactor = false,
+    string? TwoFactorChallengeToken = null);

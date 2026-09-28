@@ -13,11 +13,7 @@ namespace RccgHopeHouse.Infrastructure.Persistence;
 /// lives in the IEntityTypeConfiguration&lt;T&gt; classes under Persistence/Configurations,
 /// applied automatically via ApplyConfigurationsFromAssembly() below.
 /// </summary>
-public class ApplicationDbContext :
-    IdentityDbContext<
-        ApplicationUser,
-        ApplicationRole,
-        string>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
 {
     /// <summary>
     /// Initializes a new instance with the specified database provider options.
@@ -33,60 +29,27 @@ public class ApplicationDbContext :
 
     // ==================== Domain DbSets ====================
 
-    public DbSet<Sermon> Sermons =>
-        Set<Sermon>();
-
-    public DbSet<PastorPost> PastorPosts =>
-        Set<PastorPost>();
-
-    public DbSet<GalleryImage> GalleryImages =>
-        Set<GalleryImage>();
-
-    public DbSet<GalleryCategory> GalleryCategories =>
-        Set<GalleryCategory>();
-
-    public DbSet<GalleryTag> GalleryTags =>
-        Set<GalleryTag>();
-
-    public DbSet<PrayerRequest> PrayerRequests =>
-        Set<PrayerRequest>();
-
-    public DbSet<ChurchService> ChurchServices =>
-        Set<ChurchService>();
-
-    public DbSet<ContactUs> ContactRequests =>
-        Set<ContactUs>();
-
-    public DbSet<ThemeOfTheYear> ThemeOfTheYear =>
-        Set<ThemeOfTheYear>();
-
-    public DbSet<Member> Members =>
-        Set<Member>();
-
-    public DbSet<ChurchInfo> ChurchInfo =>
-        Set<ChurchInfo>();
-
-    public DbSet<ChurchContactMethod> ChurchContactMethods =>
-        Set<ChurchContactMethod>();
-
-    public DbSet<ServiceBroadcast> ServiceBroadcasts =>
-        Set<ServiceBroadcast>();
-
-    public DbSet<GivingType> GivingTypes =>
-        Set<GivingType>();
-
-    public DbSet<Offering> Offerings =>
-        Set<Offering>();
-
-    public DbSet<ProphecyYear> ProphecyYears =>
-        Set<ProphecyYear>();
-
-    public DbSet<ProphecyCategory> ProphecyCategories =>
-        Set<ProphecyCategory>();
-
-    public DbSet<Prophecy> Prophecies =>
-        Set<Prophecy>();
-
+    public DbSet<Sermon> Sermons => Set<Sermon>();
+    public DbSet<PastorPost> PastorPosts => Set<PastorPost>();
+    public DbSet<GalleryImage> GalleryImages => Set<GalleryImage>();
+    public DbSet<GalleryCategory> GalleryCategories => Set<GalleryCategory>();
+    public DbSet<GalleryTag> GalleryTags => Set<GalleryTag>();
+    public DbSet<PrayerRequest> PrayerRequests => Set<PrayerRequest>();
+    public DbSet<ChurchService> ChurchServices => Set<ChurchService>();
+    public DbSet<ContactUs> ContactRequests => Set<ContactUs>();
+    public DbSet<ThemeOfTheYear> ThemeOfTheYear => Set<ThemeOfTheYear>();
+    public DbSet<Member> Members => Set<Member>();
+    public DbSet<ChurchInfo> ChurchInfo => Set<ChurchInfo>();
+    public DbSet<ChurchContactMethod> ChurchContactMethods => Set<ChurchContactMethod>();
+    public DbSet<ServiceBroadcast> ServiceBroadcasts => Set<ServiceBroadcast>();
+    public DbSet<GivingType> GivingTypes => Set<GivingType>();
+    public DbSet<Offering> Offerings => Set<Offering>();
+    public DbSet<ProphecyYear> ProphecyYears =>  Set<ProphecyYear>();
+    public DbSet<ProphecyCategory> ProphecyCategories =>  Set<ProphecyCategory>();
+    public DbSet<Prophecy> Prophecies => Set<Prophecy>();
+    public DbSet<AnnualPrayer> AnnualPrayers => Set<AnnualPrayer>();
+    public DbSet<AnnualPrayerPoint> AnnualPrayerPoints => Set<AnnualPrayerPoint>();
+    public DbSet<ChurchEvent> ChurchEvents => Set<ChurchEvent>();
 
     /// <summary>
     /// Configures the model schema, applies Fluent API configurations,

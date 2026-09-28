@@ -23,10 +23,12 @@ public static class DbSeeder
         await SeedPastorPostsAsync(context, theme2026, ct);
         await SeedChurchInfoAsync(context, ct);
         await SeedChurchServicesAsync(context, ct);
+        await SeedChurchEventsAsync(context, ct);
         await SeedServiceBroadcastsAsync(context, ct);
         await SeedGivingTypesAsync(context, ct);
         await SeedGalleryCategoriesAsync(context, ct);
         await SeedPropheciesAsync(context, ct);
+        await SeedAnnualPrayerAsync(context, ct);
         await SeedAdminAccountAsync(userManager, roleManager, configuration);
     }
 
@@ -221,6 +223,219 @@ public static class DbSeeder
             "COMPLETED SUCCESSFULLY ===");
     }
 
+
+
+    /// <summary>
+    /// Seeds the initial Upcoming Events that were originally
+    /// hardcoded in the frontend Events.tsx component.
+    ///
+    /// Each event is checked individually by title before insertion.
+    /// This keeps the seed idempotent while allowing administrators
+    /// to edit existing events without their changes being overwritten
+    /// when the application starts.
+    /// </summary>
+    private static async Task SeedChurchEventsAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        var events = new[]
+        {
+        ChurchEvent.Create(
+            title: "Annual Thanksgiving Service",
+            category: ServiceCategory.ThanksgivingService,
+            startDateTime: new DateTime(
+                2026, 12, 31, 10, 0, 0,
+                DateTimeKind.Utc),
+            endDateTime: new DateTime(
+                2026, 12, 31, 14, 0, 0,
+                DateTimeKind.Utc),
+            description:
+                "Join us for our Annual Thanksgiving Service.",
+            icon: "🎉",
+            color: "gold",
+            registrationUrl: null,
+            registrationButtonText: "Register Now",
+            imageUrl: null,
+            displayOrder: 1,
+            isActive: true),
+
+        ChurchEvent.Create(
+            title: "Youth Conference 2027",
+            category: ServiceCategory.SpecialEvent,
+            startDateTime: new DateTime(
+                2027, 1, 15, 18, 0, 0,
+                DateTimeKind.Utc),
+            endDateTime: new DateTime(
+                2027, 1, 17, 18, 0, 0,
+                DateTimeKind.Utc),
+            description:
+                "Youth Conference running from 15–17 January 2027.",
+            icon: "👥",
+            color: "blue",
+            registrationUrl: null,
+            registrationButtonText: "Register Now",
+            imageUrl: null,
+            displayOrder: 2,
+            isActive: true),
+
+        ChurchEvent.Create(
+            title: "Marriage Enrichment Seminar",
+            category: ServiceCategory.SpecialEvent,
+            startDateTime: new DateTime(
+                2027, 2, 14, 9, 0, 0,
+                DateTimeKind.Utc),
+            endDateTime: new DateTime(
+                2027, 2, 14, 16, 0, 0,
+                DateTimeKind.Utc),
+            description:
+                "Marriage Enrichment Seminar.",
+            icon: "💑",
+            color: "rose",
+            registrationUrl: null,
+            registrationButtonText: "Register Now",
+            imageUrl: null,
+            displayOrder: 3,
+            isActive: true)
+    };
+
+        foreach (var churchEvent in events)
+        {
+            var exists =
+                await context.ChurchEvents
+                    .AnyAsync(
+                        existing =>
+                            existing.Title ==
+                            churchEvent.Title,
+                        ct);
+
+            if (exists)
+                continue;
+
+            await context.ChurchEvents.AddAsync(
+                churchEvent,
+                ct);
+        }
+
+        await context.SaveChangesAsync(ct);
+    }
+
+
+    /// <summary>
+    /// Seeds the 2026 Annual Prayer that was originally
+    /// hardcoded in AnnualPrayerPoints.tsx.
+    ///
+    /// The year is used as the seed boundary. If an Annual Prayer
+    /// for 2026 already exists, this method does nothing so that
+    /// subsequent administrator changes are not overwritten when
+    /// the application starts.
+    /// </summary>
+    private static async Task SeedAnnualPrayerAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        const int year = 2026;
+
+        var exists =
+            await context.AnnualPrayers
+                .AnyAsync(
+                    prayer => prayer.Year == year,
+                    ct);
+
+        if (exists)
+            return;
+
+        var annualPrayer =
+            AnnualPrayer.Create(
+                year: year,
+                theme: "Brand New Beginning",
+                service: "January 2026 Holy Ghost Service",
+                author: "Pastor E.A. Adeboye",
+                bibleReference: "Exo 14:21-22",
+                bibleText:
+                    "And Moses stretched out his hand over the sea, " +
+                    "and the LORD caused the sea to go back by a strong " +
+                    "east wind all that night, and made the sea dry land, " +
+                    "and the waters were divided. And the children of " +
+                    "Israel went into the midst of the sea upon the dry " +
+                    "ground: and the waters were a wall unto them on their " +
+                    "right hand, and on their left.",
+                declaration:
+                    "The Lord has declared through our Father in the Lord " +
+                    "(Pastor E.A Adeboye) that: \"The Wind is Blowing\". " +
+                    "The wind of God will surely reposition His children " +
+                    "into a brand new beginning for good and bring " +
+                    "destruction to their enemies.",
+                closingVerse:
+                    "Remember that your brand new beginning will be " +
+                    "determined by the fact that you are on God's side. " +
+                    "Galatians 3:26.",
+                imageUrl: "/prayers-image.jpg",
+                isActive: true);
+
+        var prayerPoints = new[]
+        {
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Thank God that He has kept you till now.",
+            1),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Ask Him to forgive you for your previous lukewarmness. " +
+            "You won't take Him for granted anymore and you will be " +
+            "serious from now on. You won't allow the comfort He has " +
+            "given you to drive you away from Him.",
+            2),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Father, now that my set time has come, arise and help me.",
+            3),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Father, from this very moment, let all those who are " +
+            "connected with my destiny begin to fulfil their purpose.",
+            4),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "If there is still any form of jonah left in my life " +
+            "(laziness, pride, lukewarmness, incomplete obedience) " +
+            "blocking my way to complete victory, please help me " +
+            "uproot them.",
+            5),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Father, give me a brand new beginning to serve You now " +
+            "with all seriousness.",
+            6),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Father, like in the case of Naaman, let me become a " +
+            "testimony to the whole world.",
+            7),
+
+        AnnualPrayerPoint.Create(
+            annualPrayer.Id,
+            "Your personal prayer points",
+            8)
+    };
+
+        foreach (var prayerPoint in prayerPoints)
+        {
+            annualPrayer.PrayerPoints.Add(
+                prayerPoint);
+        }
+
+        await context.AnnualPrayers.AddAsync(
+            annualPrayer,
+            ct);
+
+        await context.SaveChangesAsync(ct);
+    }
 
 
     /// <summary>

@@ -27,4 +27,10 @@ public class ApplicationUser : IdentityUser
     /// Timestamp of the last successful authentication.
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>
+    /// Relative path or URL of the user's profile photograph.
+    /// Null when no profile photograph has been uploaded.
+    /// </summary>
+    public string? ProfileImagePath { get; set; }
 }

@@ -293,69 +293,37 @@ public static class GalleryEndpoints
             });
     }
 
-    private static async Task<IResult> UpdateAsync(
-        Guid id,
-        [AsParameters]
-        UpdateGalleryImageRequest request,
-        IMediator mediator,
-        CancellationToken ct)
+    private static async Task<IResult> UpdateAsync(Guid id, [AsParameters] UpdateGalleryImageRequest request,
+        IMediator mediator, CancellationToken ct)
     {
         byte[]? newImageData = null;
         string? newContentType = null;
 
-        if (request.NewImage is not null &&
-            request.NewImage.Length > 0)
+        if (request.NewImage is not null && request.NewImage.Length > 0)
         {
-            using var ms =
-                new MemoryStream();
-
-            await request.NewImage.CopyToAsync(
-                ms,
-                ct);
-
-            newImageData =
-                ms.ToArray();
-
-            newContentType =
-                request.NewImage.ContentType;
+            using var ms = new MemoryStream();
+            await request.NewImage.CopyToAsync(ms, ct);
+            newImageData = ms.ToArray();
+            newContentType = request.NewImage.ContentType;
         }
 
-        var tags =
-            ParseTags(
-                request.Tags);
+        var tags = ParseTags(request.Tags);
 
-        var command =
-            new UpdateGalleryImageCommand(
-                Id:
-                    id,
-                Title:
-                    request.Title,
-                Description:
-                    request.Description,
-                AltText:
-                    request.AltText,
-                Photographer:
-                    request.Photographer,
-                NewImageData:
-                    newImageData,
-                NewContentType:
-                    newContentType,
-                EventDate:
-                    request.EventDate,
-                CategoryId:
-                    request.CategoryId,
-                Tags:
-                    tags,
-                DisplayOrder:
-                    request.DisplayOrder);
+        var command = new UpdateGalleryImageCommand(
+                Id: id,
+                Title: request.Title,
+                Description: request.Description,
+                AltText: request.AltText,
+                Photographer: request.Photographer,
+                NewImageData: newImageData,
+                NewContentType: newContentType,
+                EventDate: request.EventDate,
+                CategoryId: request.CategoryId,
+                Tags: tags,
+                DisplayOrder: request.DisplayOrder);
 
-        var result =
-            await mediator.Send(
-                command,
-                ct);
-
-        return TypedResults.Ok(
-            result);
+        var result = await mediator.Send(command, ct);
+        return TypedResults.Ok(result);
     }
 
     private static async Task<IResult> SetFeaturedAsync(

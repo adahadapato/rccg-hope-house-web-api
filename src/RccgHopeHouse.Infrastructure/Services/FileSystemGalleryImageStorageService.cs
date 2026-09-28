@@ -503,38 +503,30 @@ public sealed class FileSystemGalleryImageStorageService
             Path.GetFullPath(
                 _webRootPath);
 
-        var rootWithSeparator =
-            fullWebRoot.TrimEnd(
-                Path.DirectorySeparatorChar,
-                Path.AltDirectorySeparatorChar)
-            + Path.DirectorySeparatorChar;
+        var rootWithSeparator = fullWebRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                                            + Path.DirectorySeparatorChar;
 
         // Prevent a malformed or manipulated database path
         // from escaping the configured web-root directory.
-        if (!physicalPath.StartsWith(
-                rootWithSeparator,
-                StringComparison.OrdinalIgnoreCase))
+        if (!physicalPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 "Gallery image path is outside the configured web root.");
         }
 
-        TryDeleteFile(
-            physicalPath);
+        TryDeleteFile(physicalPath);
     }
+
 
     /// <summary>
     /// Deletes a file when present.
     /// Missing files are intentionally ignored.
     /// </summary>
-    private static void TryDeleteFile(
-        string path)
+    private static void TryDeleteFile(string path)
     {
-        if (File.Exists(
-                path))
+        if (File.Exists(path))
         {
-            File.Delete(
-                path);
+            File.Delete(path);
         }
     }
 }
