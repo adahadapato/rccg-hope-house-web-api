@@ -93,7 +93,9 @@ public static class DependencyInjection
         services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IAnnualPrayerRepository, AnnualPrayerRepository>();
         services.AddScoped<IChurchEventRepository, ChurchEventRepository>();
-        
+        services.AddScoped<IDevotionalRepository, DevotionalRepository>();
+        services.AddScoped<IBibleReferenceService, BibleReferenceService>();
+
 
 
         // 6. Application-facing infrastructure services

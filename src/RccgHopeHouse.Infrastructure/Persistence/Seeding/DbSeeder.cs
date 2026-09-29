@@ -29,6 +29,7 @@ public static class DbSeeder
         await SeedGalleryCategoriesAsync(context, ct);
         await SeedPropheciesAsync(context, ct);
         await SeedAnnualPrayerAsync(context, ct);
+        await SeedDevotionalAsync(context, ct);
         await SeedAdminAccountAsync(userManager, roleManager, configuration);
     }
 
@@ -53,49 +54,38 @@ public static class DbSeeder
         new ApplicationRole
         {
             Name = Core.Constants.Roles.Admin,
-            Description =
-                "Full administrative access to the system."
+            Description =  "Full administrative access to the system."
         },
         new ApplicationRole
         {
             Name = Core.Constants.Roles.ContentEditor,
-            Description =
-                "Can create and manage website content."
+            Description = "Can create and manage website content."
         },
         new ApplicationRole
         {
             Name = Core.Constants.Roles.MediaManager,
-            Description =
-                "Can manage website images and media."
+            Description = "Can manage website images and media."
         },
         new ApplicationRole
         {
             Name = Core.Constants.Roles.PrayerTeam,
-            Description =
-                "Can access and manage prayer-related submissions."
+            Description = "Can access and manage prayer-related submissions."
         }
     };
 
         foreach (var seedRole in roles)
         {
-            var existingRole =
-                await roleManager.FindByNameAsync(
-                    seedRole.Name!);
+            var existingRole = await roleManager.FindByNameAsync(seedRole.Name!);
 
             if (existingRole is null)
             {
-                var roleResult =
-                    await roleManager.CreateAsync(
-                        seedRole);
+                var roleResult = await roleManager.CreateAsync(seedRole);
 
-                Console.WriteLine(
-                    $"=== Created role '{seedRole.Name}': " +
-                    $"Succeeded={roleResult.Succeeded} ===");
+                Console.WriteLine( $"=== Created role '{seedRole.Name}': Succeeded={roleResult.Succeeded} ===");
 
                 if (!roleResult.Succeeded)
                 {
-                    var roleErrors =
-                        string.Join(
+                    var roleErrors =  string.Join(
                             "; ",
                             roleResult.Errors.Select(
                                 error =>
@@ -223,6 +213,96 @@ public static class DbSeeder
             "COMPLETED SUCCESSFULLY ===");
     }
 
+
+
+    /// <summary>
+    /// Seeds the initial Daily Devotional that was originally
+    /// hardcoded in the frontend DailyDevotional.tsx component.
+    ///
+    /// The devotional date is used as the seed boundary. If a devotional
+    /// already exists for this date, the method does nothing so that
+    /// subsequent administrator changes are not overwritten when the
+    /// application starts.
+    /// </summary>
+    private static async Task SeedDevotionalAsync(
+        ApplicationDbContext context,
+        CancellationToken ct)
+    {
+        var devotionalDate = new DateOnly(
+            2026,
+            6,
+            6);
+
+        var exists =
+            await context.Devotionals
+                .AnyAsync(
+                    devotional =>
+                        devotional.DevotionalDate ==
+                        devotionalDate,
+                    ct);
+
+        if (exists)
+            return;
+
+        var commentaryPoints = new[]
+        {
+        "Beloved, divine repositioning is a strategic move by God " +
+        "to place you in a position where His glory will be " +
+        "manifested in your life. Just as God instructed the " +
+        "children of Israel to change their direction and encamp " +
+        "by the sea, He may ask you to make seemingly unusual " +
+        "decisions that will ultimately lead to your breakthrough.",
+
+        "The Israelites appeared to be trapped and confused, but " +
+        "God had a greater plan. What looks like a dead end to you " +
+        "is actually a setup for God's mighty deliverance. Your " +
+        "current position is not your final destination.",
+
+        "When God repositions you, He does so for a purpose: to " +
+        "display His power, to confound your enemies, and to bring " +
+        "you into a new season of victory. Trust His leading even " +
+        "when it doesn't make sense to your natural understanding."
+    };
+
+        var prayerPoints = new[]
+        {
+        "Father, thank You for Your divine repositioning in my life.",
+
+        "Lord, give me the grace to follow Your instructions precisely.",
+
+        "Father, reposition me for breakthrough and divine manifestation.",
+
+        "Lord, confuse every Pharaoh pursuing my destiny in Jesus' name.",
+
+        "Father, let my life be a testimony of Your power and deliverance."
+    };
+
+        var devotional =
+            Devotional.Create(
+                devotionalDate: devotionalDate,
+                theme: "DIVINE REPOSITIONING",
+                scriptureReference: "Exodus 14:1-4",
+                passageId: "EXO.14.1-EXO.14.4",
+                thought:
+                    "Beloved, divine repositioning is a strategic move by " +
+                    "God to place you in a position where His glory will be " +
+                    "manifested. What looks like a dead end is actually a " +
+                    "setup for your breakthrough.",
+                commentaryPoints: commentaryPoints,
+                prayerPoints: prayerPoints,
+                declaration:
+                    "I am divinely repositioned for breakthrough. My enemies " +
+                    "shall be confounded, and the glory of God shall be " +
+                    "manifested in my life. In Jesus' name!");
+
+        devotional.Publish();
+
+        await context.Devotionals.AddAsync(
+            devotional,
+            ct);
+
+        await context.SaveChangesAsync(ct);
+    }
 
 
     /// <summary>

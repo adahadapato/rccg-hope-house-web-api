@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RccgHopeHouse.Application.Features.Bibles.Dtos;
 using RccgHopeHouse.Application.Features.Bibles.Queries;
+using RccgHopeHouse.Core.Models;
 
 namespace RccgHopeHouse.Api.Endpoints.Bibles;
 
@@ -27,14 +28,26 @@ public static class ApiBibleEndpoints
              .AllowAnonymous();
 
         bible.MapGet("/passage", GetPassageAsync)
-            .WithName("GetBiblePassage")
-            .WithSummary("Get a Bible passage")
-            .WithDescription(
-                "Returns scripture text from a specified API.Bible translation and passage.")
-            .Produces<BiblePassageDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status500InternalServerError)
-            .AllowAnonymous();
+             .WithName("GetBiblePassage")
+             .WithSummary("Get a Bible passage")
+             .WithDescription(
+                 "Returns scripture text from a specified API.Bible translation and passage.")
+             .Produces<BiblePassageDto>(
+                 StatusCodes.Status200OK)
+             .ProducesProblem(
+                 StatusCodes.Status400BadRequest)
+             .ProducesProblem(
+                 StatusCodes.Status500InternalServerError)
+             .AllowAnonymous();
+
+        bible.MapGet("/reference-data", GetReferenceDataAsync)
+             .WithName("GetBibleReferenceData")
+             .WithSummary("Get Bible reference data")
+             .WithDescription(
+                 "Returns the canonical Bible books together with their API.Bible book codes and chapter verse counts for scripture selection and validation.")
+             .Produces<IReadOnlyList<BibleBookReference>>(
+                 StatusCodes.Status200OK)
+             .AllowAnonymous();
 
         return group;
     }
@@ -52,10 +65,10 @@ public static class ApiBibleEndpoints
     }
 
     private static async Task<IResult> GetPassageAsync(
-    [FromQuery] string bibleId,
-    [FromQuery] string passageId,
-    [FromServices] IMediator mediator,
-    CancellationToken cancellationToken)
+        [FromQuery] string bibleId,
+        [FromQuery] string passageId,
+        [FromServices] IMediator mediator,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(bibleId) ||
             string.IsNullOrWhiteSpace(passageId))
@@ -72,5 +85,18 @@ public static class ApiBibleEndpoints
             cancellationToken);
 
         return TypedResults.Ok(passage);
+    }
+
+    private static async Task<IResult> GetReferenceDataAsync(
+    [FromServices] IMediator mediator,
+    CancellationToken cancellationToken)
+    {
+        var query = new GetBibleReferenceDataQuery();
+
+        var books = await mediator.Send(
+            query,
+            cancellationToken);
+
+        return TypedResults.Ok(books);
     }
 }

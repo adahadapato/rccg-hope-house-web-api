@@ -10,6 +10,7 @@ using RccgHopeHouse.Api.Endpoints.ChurchEvents;
 using RccgHopeHouse.Api.Endpoints.ChurchInfo;
 using RccgHopeHouse.Api.Endpoints.ChurchServices;
 using RccgHopeHouse.Api.Endpoints.ContactUs;
+using RccgHopeHouse.Api.Endpoints.Devotionals;
 using RccgHopeHouse.Api.Endpoints.Gallery;
 using RccgHopeHouse.Api.Endpoints.GalleryCategories;
 using RccgHopeHouse.Api.Endpoints.GivingTypes;
@@ -125,7 +126,8 @@ api.MapProphecyEndpoints();
 api.MapThemeOfTheYearEndpoints();
 api.MapAnnualPrayerEndpoints();
 api.MapChurchEventEndpoints();
-api.MapAccountEndpoints();  
+api.MapAccountEndpoints();
+api.MapDevotionalEndpoints();
 
 app.MapGet(
         "/health",

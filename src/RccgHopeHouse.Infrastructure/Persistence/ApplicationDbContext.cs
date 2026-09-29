@@ -50,6 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AnnualPrayer> AnnualPrayers => Set<AnnualPrayer>();
     public DbSet<AnnualPrayerPoint> AnnualPrayerPoints => Set<AnnualPrayerPoint>();
     public DbSet<ChurchEvent> ChurchEvents => Set<ChurchEvent>();
+    public DbSet<Devotional> Devotionals => Set<Devotional>();
 
     /// <summary>
     /// Configures the model schema, applies Fluent API configurations,
