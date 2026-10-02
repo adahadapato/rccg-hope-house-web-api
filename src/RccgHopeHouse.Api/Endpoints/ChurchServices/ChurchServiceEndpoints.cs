@@ -12,12 +12,22 @@ namespace RccgHopeHouse.Api.Endpoints.ChurchServices;
 /// Minimal API endpoints for church service schedules:
 /// public timetable and admin management.
 /// Supports recurrence patterns, Zoom integration,
-/// monthly-service visibility, broadcast configuration
-/// and day-based filtering.
+/// monthly-service visibility, broadcast configuration,
+/// current service themes and day-based filtering.
 /// </summary>
 [Authorize]
 public static class ChurchServiceEndpoints
 {
+    /// <summary>
+    /// Maps all public and administrative church service endpoints.
+    /// </summary>
+    /// <param name="group">
+    /// The parent API route group.
+    /// </param>
+    /// <returns>
+    /// The parent route group after the church service endpoints
+    /// have been registered.
+    /// </returns>
     public static RouteGroupBuilder MapChurchServiceEndpoints(
         this RouteGroupBuilder group)
     {
@@ -50,8 +60,10 @@ public static class ChurchServiceEndpoints
         services.MapGet("/categories", GetCategoriesAsync)
             .WithName("GetChurchServiceCategories")
             .WithSummary("Get available church service categories")
-            .WithDescription("Returns every category defined by the church service category enum.")
-            .Produces<IReadOnlyList<string>>(StatusCodes.Status200OK)
+            .WithDescription(
+                "Returns every category defined by the church service category enum.")
+            .Produces<IReadOnlyList<string>>(
+                StatusCodes.Status200OK)
             .AllowAnonymous();
 
         services.MapGet("/today", GetTodayAsync)
@@ -134,6 +146,11 @@ public static class ChurchServiceEndpoints
 
     // ===== Public Handlers =====
 
+    /// <summary>
+    /// Retrieves church services using the supplied public filters.
+    /// Active services are returned by default unless inactive
+    /// services are explicitly requested.
+    /// </summary>
     private static async Task<IResult> GetListAsync(
         [FromQuery] ServiceCategory? category,
         [FromQuery] DayOfWeek? dayOfWeek,
@@ -155,6 +172,9 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(list);
     }
 
+    /// <summary>
+    /// Retrieves a single church service by its identifier.
+    /// </summary>
     private static async Task<IResult> GetByIdAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -170,6 +190,9 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(service);
     }
 
+    /// <summary>
+    /// Retrieves active church services scheduled for today.
+    /// </summary>
     private static async Task<IResult> GetTodayAsync(
         [FromServices] IMediator mediator,
         CancellationToken cancellationToken)
@@ -190,6 +213,9 @@ public static class ChurchServiceEndpoints
 
     // ===== Admin Handlers =====
 
+    /// <summary>
+    /// Creates a new church service from the supplied request.
+    /// </summary>
     private static async Task<IResult> CreateAsync(
         [FromBody] CreateChurchServiceRequest request,
         [FromServices] IMediator mediator,
@@ -214,7 +240,9 @@ public static class ChurchServiceEndpoints
                 ShowInMonthlyServices:
                     request.ShowInMonthlyServices,
                 IsBroadcastEnabled:
-                    request.IsBroadcastEnabled);
+                    request.IsBroadcastEnabled,
+                CurrentTheme:
+                    request.CurrentTheme);
 
         var result = await mediator.Send(
             command,
@@ -226,6 +254,9 @@ public static class ChurchServiceEndpoints
             new { id = result.Id });
     }
 
+    /// <summary>
+    /// Updates an existing church service from the supplied request.
+    /// </summary>
     private static async Task<IResult> UpdateAsync(
         Guid id,
         [FromBody] UpdateChurchServiceRequest request,
@@ -252,7 +283,9 @@ public static class ChurchServiceEndpoints
                 ShowInMonthlyServices:
                     request.ShowInMonthlyServices,
                 IsBroadcastEnabled:
-                    request.IsBroadcastEnabled);
+                    request.IsBroadcastEnabled,
+                CurrentTheme:
+                    request.CurrentTheme);
 
         var result = await mediator.Send(
             command,
@@ -261,6 +294,9 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(result);
     }
 
+    /// <summary>
+    /// Toggles the active state of a church service.
+    /// </summary>
     private static async Task<IResult> ToggleActiveAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -276,6 +312,9 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(result);
     }
 
+    /// <summary>
+    /// Toggles whether broadcasts are enabled for a church service.
+    /// </summary>
     private static async Task<IResult> ToggleBroadcastAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -291,6 +330,9 @@ public static class ChurchServiceEndpoints
         return TypedResults.Ok(result);
     }
 
+    /// <summary>
+    /// Permanently deletes a church service.
+    /// </summary>
     private static async Task<IResult> DeleteAsync(
         Guid id,
         [FromServices] IMediator mediator,
@@ -338,7 +380,63 @@ public static class ChurchServiceEndpoints
 
 // ==================== API Request DTOs ====================
 
-public record CreateChurchServiceRequest(
+/// <summary>
+/// Request model used when creating a new church service.
+/// </summary>
+/// <param name="Name">
+/// The name of the church service.
+/// </param>
+/// <param name="Category">
+/// The category to which the service belongs.
+/// </param>
+/// <param name="DayOfWeek">
+/// The normal day of the week for the service.
+/// </param>
+/// <param name="StartTime">
+/// The scheduled start time, if specified.
+/// </param>
+/// <param name="EndTime">
+/// The scheduled end time, if specified.
+/// </param>
+/// <param name="Description">
+/// An optional description of the service.
+/// </param>
+/// <param name="Location">
+/// The physical service location, if applicable.
+/// </param>
+/// <param name="ZoomId">
+/// The Zoom meeting identifier, if applicable.
+/// </param>
+/// <param name="ZoomPasscode">
+/// The Zoom meeting passcode, if applicable.
+/// </param>
+/// <param name="Recurrence">
+/// Defines how frequently the service occurs.
+/// </param>
+/// <param name="DayOfMonth">
+/// The configured day of the month for monthly services.
+/// </param>
+/// <param name="IsLocal">
+/// Indicates whether the service belongs to Hope House locally.
+/// </param>
+/// <param name="DisplayOrder">
+/// Determines the display position of the service.
+/// </param>
+/// <param name="Icon">
+/// Optional presentation icon for the service.
+/// </param>
+/// <param name="ShowInMonthlyServices">
+/// Indicates whether the service appears in the public
+/// Special Monthly Services section.
+/// </param>
+/// <param name="IsBroadcastEnabled">
+/// Indicates whether broadcasts may be associated with the service.
+/// </param>
+/// <param name="CurrentTheme">
+/// The theme for the upcoming or currently occurring
+/// instance of the service.
+/// </param>
+public sealed record CreateChurchServiceRequest(
     string Name,
     ServiceCategory Category,
     DayOfWeek DayOfWeek,
@@ -354,9 +452,66 @@ public record CreateChurchServiceRequest(
     int DisplayOrder = 0,
     string? Icon = null,
     bool ShowInMonthlyServices = false,
-    bool IsBroadcastEnabled = false);
+    bool IsBroadcastEnabled = false,
+    string? CurrentTheme = null);
 
-public record UpdateChurchServiceRequest(
+/// <summary>
+/// Request model used when updating an existing church service.
+/// </summary>
+/// <param name="Name">
+/// The name of the church service.
+/// </param>
+/// <param name="Category">
+/// The category to which the service belongs.
+/// </param>
+/// <param name="DayOfWeek">
+/// The normal day of the week for the service.
+/// </param>
+/// <param name="StartTime">
+/// The scheduled start time, if specified.
+/// </param>
+/// <param name="EndTime">
+/// The scheduled end time, if specified.
+/// </param>
+/// <param name="Description">
+/// An optional description of the service.
+/// </param>
+/// <param name="Location">
+/// The physical service location, if applicable.
+/// </param>
+/// <param name="ZoomId">
+/// The Zoom meeting identifier, if applicable.
+/// </param>
+/// <param name="ZoomPasscode">
+/// The Zoom meeting passcode, if applicable.
+/// </param>
+/// <param name="Recurrence">
+/// Defines how frequently the service occurs.
+/// </param>
+/// <param name="DayOfMonth">
+/// The configured day of the month for monthly services.
+/// </param>
+/// <param name="IsLocal">
+/// Indicates whether the service belongs to Hope House locally.
+/// </param>
+/// <param name="DisplayOrder">
+/// Determines the display position of the service.
+/// </param>
+/// <param name="Icon">
+/// Optional presentation icon for the service.
+/// </param>
+/// <param name="ShowInMonthlyServices">
+/// Indicates whether the service appears in the public
+/// Special Monthly Services section.
+/// </param>
+/// <param name="IsBroadcastEnabled">
+/// Indicates whether broadcasts may be associated with the service.
+/// </param>
+/// <param name="CurrentTheme">
+/// The theme for the upcoming or currently occurring
+/// instance of the service.
+/// </param>
+public sealed record UpdateChurchServiceRequest(
     string Name,
     ServiceCategory Category,
     DayOfWeek DayOfWeek,
@@ -372,4 +527,5 @@ public record UpdateChurchServiceRequest(
     int DisplayOrder,
     string? Icon,
     bool ShowInMonthlyServices,
-    bool IsBroadcastEnabled);
+    bool IsBroadcastEnabled,
+    string? CurrentTheme);

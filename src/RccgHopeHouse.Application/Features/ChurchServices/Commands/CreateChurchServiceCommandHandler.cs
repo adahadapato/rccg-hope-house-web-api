@@ -5,17 +5,46 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-public class CreateChurchServiceCommandHandler
-    : IRequestHandler<CreateChurchServiceCommand, ChurchServiceDto>
+/// <summary>
+/// Handles the creation of a new church service.
+/// </summary>
+/// <remarks>
+/// The handler creates the service domain entity, applies its
+/// scheduling and display configuration, persists it through the
+/// church service repository, and returns the resulting service DTO.
+/// </remarks>
+public sealed class CreateChurchServiceCommandHandler
+    : IRequestHandler<
+        CreateChurchServiceCommand,
+        ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
 
+    /// <summary>
+    /// Initializes a new instance of the
+    /// <see cref="CreateChurchServiceCommandHandler"/> class.
+    /// </summary>
+    /// <param name="repository">
+    /// Repository used to persist church services.
+    /// </param>
     public CreateChurchServiceCommandHandler(
         IChurchServiceRepository repository)
     {
         _repository = repository;
     }
 
+    /// <summary>
+    /// Creates and persists a new church service.
+    /// </summary>
+    /// <param name="request">
+    /// The command containing the church service details.
+    /// </param>
+    /// <param name="ct">
+    /// Token used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// A DTO representing the newly created church service.
+    /// </returns>
     public async Task<ChurchServiceDto> Handle(
         CreateChurchServiceCommand request,
         CancellationToken ct)
@@ -32,7 +61,8 @@ public class CreateChurchServiceCommandHandler
             request.IsLocal,
             request.Icon,
             request.ShowInMonthlyServices,
-            request.IsBroadcastEnabled);
+            request.IsBroadcastEnabled,
+            request.CurrentTheme);
 
         service.UpdateSchedule(
             request.StartTime,
@@ -54,6 +84,15 @@ public class CreateChurchServiceCommandHandler
         return MapToDto(service);
     }
 
+    /// <summary>
+    /// Maps a church service domain entity to its application DTO.
+    /// </summary>
+    /// <param name="service">
+    /// The church service to map.
+    /// </param>
+    /// <returns>
+    /// A DTO containing the persisted church service information.
+    /// </returns>
     private static ChurchServiceDto MapToDto(
         ChurchService service)
     {
@@ -75,6 +114,7 @@ public class CreateChurchServiceCommandHandler
             service.DisplayOrder,
             service.Icon,
             service.ShowInMonthlyServices,
-            service.IsBroadcastEnabled);
+            service.IsBroadcastEnabled,
+            service.CurrentTheme);
     }
 }

@@ -5,24 +5,65 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Queries;
 
-public class GetChurchServiceByIdQueryHandler
-    : IRequestHandler<GetChurchServiceByIdQuery, ChurchServiceDto>
+/// <summary>
+/// Handles requests to retrieve a single church service
+/// by its unique identifier.
+/// </summary>
+/// <remarks>
+/// The handler retrieves the church service from the repository
+/// and maps the domain entity to a detailed
+/// <see cref="ChurchServiceDto"/>.
+///
+/// The returned DTO includes scheduling information, recurrence,
+/// location and Zoom details, presentation settings, broadcast
+/// configuration and the theme for the upcoming or currently
+/// occurring service.
+/// </remarks>
+public sealed class GetChurchServiceByIdQueryHandler
+    : IRequestHandler<
+        GetChurchServiceByIdQuery,
+        ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
 
+    /// <summary>
+    /// Initializes a new instance of the
+    /// <see cref="GetChurchServiceByIdQueryHandler"/> class.
+    /// </summary>
+    /// <param name="repository">
+    /// Repository used to retrieve church service records.
+    /// </param>
     public GetChurchServiceByIdQueryHandler(
         IChurchServiceRepository repository)
     {
         _repository = repository;
     }
 
+    /// <summary>
+    /// Retrieves the requested church service and maps it
+    /// to a detailed church service DTO.
+    /// </summary>
+    /// <param name="request">
+    /// The query containing the unique identifier of the
+    /// church service to retrieve.
+    /// </param>
+    /// <param name="ct">
+    /// Token used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// A DTO containing the requested church service information.
+    /// </returns>
+    /// <exception cref="NotFoundException">
+    /// Thrown when no church service exists with the supplied identifier.
+    /// </exception>
     public async Task<ChurchServiceDto> Handle(
         GetChurchServiceByIdQuery request,
         CancellationToken ct)
     {
-        var service = await _repository.GetByIdAsync(
-            request.Id,
-            ct)
+        var service =
+            await _repository.GetByIdAsync(
+                request.Id,
+                ct)
             ?? throw new NotFoundException(
                 nameof(Core.Entities.ChurchService),
                 request.Id);
@@ -44,7 +85,11 @@ public class GetChurchServiceByIdQueryHandler
             IsActive: service.IsActive,
             DisplayOrder: service.DisplayOrder,
             Icon: service.Icon,
-            ShowInMonthlyServices: service.ShowInMonthlyServices,
-            IsBroadcastEnabled: service.IsBroadcastEnabled);
+            ShowInMonthlyServices:
+                service.ShowInMonthlyServices,
+            IsBroadcastEnabled:
+                service.IsBroadcastEnabled,
+            CurrentTheme:
+                service.CurrentTheme);
     }
 }

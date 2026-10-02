@@ -5,17 +5,49 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-public class UpdateChurchServiceCommandHandler
-    : IRequestHandler<UpdateChurchServiceCommand, ChurchServiceDto>
+/// <summary>
+/// Handles updates to an existing church service.
+/// </summary>
+/// <remarks>
+/// The handler retrieves the existing service, applies its core,
+/// scheduling, display, broadcast and current-theme settings,
+/// persists the changes, and returns the updated service DTO.
+/// </remarks>
+public sealed class UpdateChurchServiceCommandHandler
+    : IRequestHandler<
+        UpdateChurchServiceCommand,
+        ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
 
+    /// <summary>
+    /// Initializes a new instance of the
+    /// <see cref="UpdateChurchServiceCommandHandler"/> class.
+    /// </summary>
+    /// <param name="repository">
+    /// Repository used to retrieve and persist church services.
+    /// </param>
     public UpdateChurchServiceCommandHandler(
         IChurchServiceRepository repository)
     {
         _repository = repository;
     }
 
+    /// <summary>
+    /// Updates an existing church service.
+    /// </summary>
+    /// <param name="request">
+    /// The command containing the updated church service details.
+    /// </param>
+    /// <param name="ct">
+    /// Token used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// A DTO representing the updated church service.
+    /// </returns>
+    /// <exception cref="NotFoundException">
+    /// Thrown when the requested church service cannot be found.
+    /// </exception>
     public async Task<ChurchServiceDto> Handle(
         UpdateChurchServiceCommand request,
         CancellationToken ct)
@@ -40,7 +72,8 @@ public class UpdateChurchServiceCommandHandler
             request.IsLocal,
             request.Icon,
             request.ShowInMonthlyServices,
-            request.IsBroadcastEnabled);
+            request.IsBroadcastEnabled,
+            request.CurrentTheme);
 
         service.UpdateSchedule(
             request.StartTime,
@@ -59,6 +92,21 @@ public class UpdateChurchServiceCommandHandler
         await _repository.SaveChangesAsync(
             ct);
 
+        return MapToDto(service);
+    }
+
+    /// <summary>
+    /// Maps a church service domain entity to its application DTO.
+    /// </summary>
+    /// <param name="service">
+    /// The updated church service.
+    /// </param>
+    /// <returns>
+    /// A DTO containing the updated church service information.
+    /// </returns>
+    private static ChurchServiceDto MapToDto(
+        Core.Entities.ChurchService service)
+    {
         return new ChurchServiceDto(
             service.Id,
             service.Name,
@@ -77,6 +125,7 @@ public class UpdateChurchServiceCommandHandler
             service.DisplayOrder,
             service.Icon,
             service.ShowInMonthlyServices,
-            service.IsBroadcastEnabled);
+            service.IsBroadcastEnabled,
+            service.CurrentTheme);
     }
 }

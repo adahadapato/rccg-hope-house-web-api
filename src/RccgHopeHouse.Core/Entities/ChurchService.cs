@@ -56,6 +56,19 @@ public class ChurchService : BaseEntity
     public bool IsBroadcastEnabled { get; private set; }
 
     /// <summary>
+    /// Theme for the upcoming or currently occurring instance
+    /// of this church service.
+    ///
+    /// This is deliberately stored on the service rather than on
+    /// a broadcast because a theme may be known before a YouTube
+    /// livestream or recording is available.
+    ///
+    /// Historical broadcast themes remain stored on their
+    /// corresponding ServiceBroadcast records.
+    /// </summary>
+    public string? CurrentTheme { get; private set; }
+
+    /// <summary>
     /// Monthly broadcasts associated directly with this service.
     /// </summary>
     public ICollection<ServiceBroadcast> Broadcasts { get; private set; }
@@ -77,7 +90,8 @@ public class ChurchService : BaseEntity
         bool isLocal = true,
         string? icon = null,
         bool showInMonthlyServices = false,
-        bool isBroadcastEnabled = false)
+        bool isBroadcastEnabled = false,
+        string? currentTheme = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             name,
@@ -97,6 +111,7 @@ public class ChurchService : BaseEntity
             Icon = NormalizeOptionalText(icon),
             ShowInMonthlyServices = showInMonthlyServices,
             IsBroadcastEnabled = isBroadcastEnabled,
+            CurrentTheme = NormalizeOptionalText(currentTheme),
             DisplayOrder = 0,
             IsActive = true
         };
@@ -130,7 +145,8 @@ public class ChurchService : BaseEntity
         bool isLocal,
         string? icon = null,
         bool showInMonthlyServices = false,
-        bool isBroadcastEnabled = false)
+        bool isBroadcastEnabled = false,
+        string? currentTheme = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             name,
@@ -148,6 +164,7 @@ public class ChurchService : BaseEntity
         Icon = NormalizeOptionalText(icon);
         ShowInMonthlyServices = showInMonthlyServices;
         IsBroadcastEnabled = isBroadcastEnabled;
+        CurrentTheme = NormalizeOptionalText(currentTheme);
 
         MarkAsUpdated();
     }
@@ -214,6 +231,27 @@ public class ChurchService : BaseEntity
         }
 
         IsBroadcastEnabled = isBroadcastEnabled;
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// Sets or clears the theme for the upcoming or currently
+    /// occurring instance of this service.
+    /// </summary>
+    /// <param name="currentTheme">
+    /// The current service theme, or null/empty to clear it.
+    /// </param>
+    public void SetCurrentTheme(string? currentTheme)
+    {
+        var normalizedTheme =
+            NormalizeOptionalText(currentTheme);
+
+        if (CurrentTheme == normalizedTheme)
+        {
+            return;
+        }
+
+        CurrentTheme = normalizedTheme;
         MarkAsUpdated();
     }
 

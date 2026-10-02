@@ -7,9 +7,10 @@ namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 /// <summary>
 /// Configuration for ChurchService schedule,
 /// presentation, location, Zoom metadata,
-/// monthly-service visibility and broadcast settings.
+/// monthly-service visibility, broadcast settings
+/// and current service theme.
 /// </summary>
-public class ChurchServiceConfiguration
+public sealed class ChurchServiceConfiguration
     : IEntityTypeConfiguration<ChurchService>
 {
     /// <summary>
@@ -57,6 +58,21 @@ public class ChurchServiceConfiguration
         builder.Property(
                 service => service.Icon)
             .HasMaxLength(50);
+
+        /// <summary>
+        /// Stores the theme for the upcoming or currently
+        /// occurring instance of the church service.
+        ///
+        /// The value is optional because not every church
+        /// service will necessarily have a published theme.
+        ///
+        /// Historical themes belonging to previous broadcasts
+        /// remain stored on their corresponding
+        /// ServiceBroadcast records.
+        /// </summary>
+        builder.Property(
+                service => service.CurrentTheme)
+            .HasMaxLength(200);
 
         /// <summary>
         /// Controls whether the service is displayed
