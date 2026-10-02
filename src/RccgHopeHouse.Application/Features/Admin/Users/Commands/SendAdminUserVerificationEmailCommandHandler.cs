@@ -26,25 +26,18 @@ public sealed class SendAdminUserVerificationEmailCommandHandler
         _emailService = emailService;
     }
 
-    public async Task<EmailResult> Handle(
-        SendAdminUserVerificationEmailCommand request,
-        CancellationToken cancellationToken)
+    public async Task<EmailResult> Handle(SendAdminUserVerificationEmailCommand request, CancellationToken cancellationToken)
     {
-        var user =
-            await _adminRepository.GetUserByIdAsync(
-                request.UserId,
-                cancellationToken);
+        var user =   await _adminRepository.GetUserByIdAsync(request.UserId, cancellationToken);
 
         if (user is null)
         {
-            throw new KeyNotFoundException(
-                $"User with ID '{request.UserId}' was not found.");
+            throw new KeyNotFoundException($"User with ID '{request.UserId}' was not found.");
         }
 
         if (user.EmailConfirmed)
         {
-            throw new InvalidOperationException(
-                "This user's email address is already confirmed.");
+            throw new InvalidOperationException( "This user's email address is already confirmed.");
         }
 
         var token =
@@ -130,10 +123,6 @@ public sealed class SendAdminUserVerificationEmailCommandHandler
             </p>
             """;
 
-        return await _emailService.SendAsync(
-            user.Email,
-            "Verify your RCCG Hope House email address",
-            htmlBody,
-            cancellationToken);
+        return await _emailService.SendAsync(user.Email, "Verify your RCCG Hope House email address", htmlBody, cancellationToken);
     }
 }

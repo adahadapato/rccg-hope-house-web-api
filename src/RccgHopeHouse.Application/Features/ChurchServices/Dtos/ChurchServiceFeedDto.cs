@@ -23,4 +23,5 @@ public record ChurchServiceFeedDto(
     int? DayOfMonth,
     int DisplayOrder,
     string? Icon,
-    bool ShowInMonthlyServices);
+    bool ShowInMonthlyServices,
+    bool IsBroadcastEnabled);

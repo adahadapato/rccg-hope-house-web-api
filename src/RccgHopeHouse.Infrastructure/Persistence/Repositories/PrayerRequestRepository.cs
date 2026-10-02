@@ -7,45 +7,135 @@ using RccgHopeHouse.Infrastructure.Persistence;
 namespace RccgHopeHouse.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// EF Core implementation of <see cref="IPrayerRequestRepository"/>.
-/// Handles status-based filtering, pagination, and pastoral workflow queries.
+/// Provides the EF Core implementation of
+/// <see cref="IPrayerRequestRepository"/>.
 /// </summary>
+/// <remarks>
+/// Supports prayer request creation, retrieval, status filtering,
+/// pagination, updates, deletion, and pastoral workflow queries.
+/// </remarks>
 public class PrayerRequestRepository : IPrayerRequestRepository
 {
     private readonly ApplicationDbContext _context;
-    public PrayerRequestRepository(ApplicationDbContext context) => _context = context;
 
-    /// <inheritdoc />
-    public async Task<PrayerRequest?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        await _context.PrayerRequests.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Orders by CreatedAt descending. Supports status filtering for pastoral dashboard views.
-    /// </remarks>
-    public async Task<IReadOnlyList<PrayerRequest>> GetByStatusAsync(PrayerRequestStatus? status, int skip, int take, CancellationToken ct = default)
+    /// <summary>
+    /// Initializes a new instance of the
+    /// <see cref="PrayerRequestRepository"/> class.
+    /// </summary>
+    /// <param name="context">
+    /// The application's EF Core database context.
+    /// </param>
+    public PrayerRequestRepository(
+        ApplicationDbContext context)
     {
-        var query = _context.PrayerRequests.AsNoTracking();
-        if (status.HasValue) query = query.Where(p => p.Status == status.Value);
-        return await query.OrderByDescending(p => p.CreatedAt).Skip(skip).Take(take).ToListAsync(ct);
+        _context = context;
     }
 
     /// <inheritdoc />
-    public async Task<int> GetCountByStatusAsync(PrayerRequestStatus status, CancellationToken ct = default) =>
-        await _context.PrayerRequests.AsNoTracking().CountAsync(p => p.Status == status, ct);
-
-    /// <inheritdoc />
-    public async Task AddAsync(PrayerRequest request, CancellationToken ct = default) =>
-        await _context.PrayerRequests.AddAsync(request, ct);
-
-    /// <inheritdoc />
-    public Task UpdateAsync(PrayerRequest request, CancellationToken ct = default)
+    public async Task<PrayerRequest?> GetByIdAsync(
+        Guid id,
+        CancellationToken ct = default)
     {
-        _context.PrayerRequests.Update(request);
+        return await _context
+            .PrayerRequests
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                prayerRequest =>
+                    prayerRequest.Id == id,
+                ct);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Results are ordered by creation date in descending order so
+    /// that the newest prayer requests appear first.
+    /// When <paramref name="status"/> is <c>null</c>, requests of
+    /// all statuses are returned.
+    /// </remarks>
+    public async Task<IReadOnlyList<PrayerRequest>> GetByStatusAsync(
+        PrayerRequestStatus? status,
+        int skip,
+        int take,
+        CancellationToken ct = default)
+    {
+        var query = _context
+            .PrayerRequests
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(
+                prayerRequest =>
+                    prayerRequest.Status ==
+                    status.Value);
+        }
+
+        return await query
+            .OrderByDescending(
+                prayerRequest =>
+                    prayerRequest.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> GetCountByStatusAsync(
+        PrayerRequestStatus status,
+        CancellationToken ct = default)
+    {
+        return await _context
+            .PrayerRequests
+            .AsNoTracking()
+            .CountAsync(
+                prayerRequest =>
+                    prayerRequest.Status ==
+                    status,
+                ct);
+    }
+
+    /// <inheritdoc />
+    public async Task AddAsync(
+        PrayerRequest request,
+        CancellationToken ct = default)
+    {
+        await _context
+            .PrayerRequests
+            .AddAsync(
+                request,
+                ct);
+    }
+
+    /// <inheritdoc />
+    public Task UpdateAsync(
+        PrayerRequest request,
+        CancellationToken ct = default)
+    {
+        _context
+            .PrayerRequests
+            .Update(request);
+
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public async Task<int> SaveChangesAsync(CancellationToken ct = default) =>
-        await _context.SaveChangesAsync(ct);
+    public Task DeleteAsync(
+        PrayerRequest request,
+        CancellationToken ct = default)
+    {
+        _context
+            .PrayerRequests
+            .Remove(request);
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public async Task<int> SaveChangesAsync(
+        CancellationToken ct = default)
+    {
+        return await _context
+            .SaveChangesAsync(ct);
+    }
 }

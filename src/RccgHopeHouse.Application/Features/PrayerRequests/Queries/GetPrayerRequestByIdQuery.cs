@@ -4,7 +4,16 @@ using RccgHopeHouse.Application.Features.PrayerRequests.Dtos;
 namespace RccgHopeHouse.Application.Features.PrayerRequests.Queries;
 
 /// <summary>
-/// Query to retrieve a single prayer request for admin detail view.
-/// Loads full metadata including pastoral notes.
+/// Represents a request to retrieve a single prayer request
+/// for administrative viewing.
 /// </summary>
-public record GetPrayerRequestByIdQuery(Guid Id) : IRequest<PrayerRequestDto>;
+/// <param name="Id">
+/// The unique identifier of the prayer request.
+/// </param>
+/// <remarks>
+/// Returns the complete prayer request information required by
+/// the administration interface, including pastoral workflow
+/// information and notes.
+/// </remarks>
+public record GetPrayerRequestByIdQuery(
+    Guid Id) : IRequest<PrayerRequestDto>;

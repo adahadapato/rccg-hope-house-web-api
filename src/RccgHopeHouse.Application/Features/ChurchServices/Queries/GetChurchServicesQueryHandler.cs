@@ -52,8 +52,8 @@ public class GetChurchServicesQueryHandler
                     DayOfMonth: service.DayOfMonth,
                     DisplayOrder: service.DisplayOrder,
                     Icon: service.Icon,
-                    ShowInMonthlyServices:
-                        service.ShowInMonthlyServices))
+                    ShowInMonthlyServices: service.ShowInMonthlyServices,
+                    IsBroadcastEnabled: service.IsBroadcastEnabled))
             .ToList();
     }
 }

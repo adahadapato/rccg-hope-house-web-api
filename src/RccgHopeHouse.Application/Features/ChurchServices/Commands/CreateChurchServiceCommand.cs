@@ -19,5 +19,6 @@ public record CreateChurchServiceCommand(
     bool IsLocal = true,
     int DisplayOrder = 0,
     string? Icon = null,
-    bool ShowInMonthlyServices = false
+    bool ShowInMonthlyServices = false,
+    bool IsBroadcastEnabled = false
 ) : IRequest<ChurchServiceDto>;

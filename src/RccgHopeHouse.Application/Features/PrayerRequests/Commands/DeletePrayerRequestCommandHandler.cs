@@ -1,52 +1,52 @@
 ﻿using MediatR;
-using RccgHopeHouse.Application.Features.PrayerRequests.Dtos;
 using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Exceptions;
 using RccgHopeHouse.Core.Interfaces;
 
-namespace RccgHopeHouse.Application.Features.PrayerRequests.Queries;
+namespace RccgHopeHouse.Application.Features.PrayerRequests.Commands;
 
 /// <summary>
-/// Handles retrieval of an individual prayer request.
+/// Handles the permanent deletion of a prayer request.
 /// </summary>
-public sealed class GetPrayerRequestByIdQueryHandler
+public sealed class DeletePrayerRequestCommandHandler
     : IRequestHandler<
-        GetPrayerRequestByIdQuery,
-        PrayerRequestDto>
+        DeletePrayerRequestCommand,
+        Unit>
 {
     private readonly IPrayerRequestRepository _repository;
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="GetPrayerRequestByIdQueryHandler"/> class.
+    /// <see cref="DeletePrayerRequestCommandHandler"/> class.
     /// </summary>
     /// <param name="repository">
-    /// Repository used to retrieve prayer requests.
+    /// Repository used to retrieve and delete prayer requests.
     /// </param>
-    public GetPrayerRequestByIdQueryHandler(
+    public DeletePrayerRequestCommandHandler(
         IPrayerRequestRepository repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// Retrieves the requested prayer request and maps it to
-    /// a <see cref="PrayerRequestDto"/>.
+    /// Retrieves the specified prayer request and permanently
+    /// deletes it from the data store.
     /// </summary>
     /// <param name="request">
-    /// The query containing the prayer request identifier.
+    /// The command containing the identifier of the prayer
+    /// request to delete.
     /// </param>
     /// <param name="ct">
     /// The cancellation token.
     /// </param>
     /// <returns>
-    /// The requested prayer request.
+    /// A MediatR unit result when the prayer request has been deleted.
     /// </returns>
     /// <exception cref="NotFoundException">
-    /// Thrown when the requested prayer request does not exist.
+    /// Thrown when the specified prayer request does not exist.
     /// </exception>
-    public async Task<PrayerRequestDto> Handle(
-        GetPrayerRequestByIdQuery request,
+    public async Task<Unit> Handle(
+        DeletePrayerRequestCommand request,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -59,7 +59,13 @@ public sealed class GetPrayerRequestByIdQueryHandler
                 nameof(PrayerRequest),
                 request.Id);
 
-        return PrayerRequestDto.FromEntity(
-            prayer);
+        await _repository.DeleteAsync(
+            prayer,
+            ct);
+
+        await _repository.SaveChangesAsync(
+            ct);
+
+        return Unit.Value;
     }
 }

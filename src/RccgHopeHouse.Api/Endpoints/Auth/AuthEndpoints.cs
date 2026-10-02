@@ -84,16 +84,25 @@ public static class AuthEndpoints
                 StatusCodes.Status401Unauthorized)
             .RequireAuthorization();
 
-        auth.MapPost(
+       
+
+        /*
+         * GET email confirmation endpoint.
+         *
+         * Used by links contained directly in verification
+         * emails. The user ID and token are supplied through
+         * the query string.
+         */
+        auth.MapGet(
                 "/confirm-email",
                 ConfirmEmailAsync)
             .WithSummary(
-                "Confirm a user's email address")
+                "Confirm a user's email address from an email link")
             .WithDescription(
-                "Validates an email confirmation token and marks the user's email address as confirmed.")
-            .WithName("ConfirmEmail")
+                "Validates an email confirmation token supplied in the query string and marks the user's email address as confirmed.")
+            .WithName("ConfirmEmailFromLink")
             .Produces(
-                StatusCodes.Status204NoContent)
+                StatusCodes.Status200OK)
             .ProducesProblem(
                 StatusCodes.Status400BadRequest)
             .RequireRateLimiting("Strict")
@@ -163,18 +172,19 @@ public static class AuthEndpoints
         return TypedResults.NoContent();
     }
 
-    private static async Task<IResult> ConfirmEmailAsync(
-        [FromBody] ConfirmEmailRequest request,
+   private static async Task<IResult> ConfirmEmailAsync(
+        [FromQuery] string userId,
+        [FromQuery] string token,
         [FromServices] IMediator mediator,
         CancellationToken ct)
     {
-        await mediator.Send(
-            new ConfirmAdminUserEmailCommand(
-                request.UserId,
-                request.Token),
-            ct);
+        await mediator.Send(new ConfirmAdminUserEmailCommand(userId, token),ct);
 
-        return TypedResults.NoContent();
+        return TypedResults.Ok(
+            new
+            {
+                message = "Your email address has been verified successfully."
+            });
     }
 }
 
@@ -193,6 +203,3 @@ public sealed record RefreshTokenRequest(
 public sealed record LogoutRequest(
     string RefreshToken);
 
-public sealed record ConfirmEmailRequest(
-    string UserId,
-    string Token);

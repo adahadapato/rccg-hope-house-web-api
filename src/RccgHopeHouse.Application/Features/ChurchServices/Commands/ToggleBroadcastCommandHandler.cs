@@ -5,37 +5,27 @@ using RccgHopeHouse.Core.Interfaces;
 
 namespace RccgHopeHouse.Application.Features.ChurchServices.Commands;
 
-public class ToggleActiveCommandHandler
-    : IRequestHandler<ToggleActiveCommand, ChurchServiceDto>
+public class ToggleBroadcastCommandHandler
+    : IRequestHandler<ToggleBroadcastCommand, ChurchServiceDto>
 {
     private readonly IChurchServiceRepository _repository;
 
-    public ToggleActiveCommandHandler(
-        IChurchServiceRepository repository)
+    public ToggleBroadcastCommandHandler(IChurchServiceRepository repository)
     {
         _repository = repository;
     }
 
     public async Task<ChurchServiceDto> Handle(
-        ToggleActiveCommand request,
-        CancellationToken ct)
+        ToggleBroadcastCommand request, CancellationToken ct)
     {
-        var service =
-            await _repository.GetByIdAsync(
-                request.Id,
-                ct)
-            ?? throw new NotFoundException(
-                nameof(Core.Entities.ChurchService),
-                request.Id);
+        var service = await _repository.GetByIdAsync(request.Id,ct)
+            ?? throw new NotFoundException(nameof(Core.Entities.ChurchService), request.Id);
 
-        service.ToggleActive();
+        service.SetBroadcastEnabled(!service.IsBroadcastEnabled);
 
-        await _repository.UpdateAsync(
-            service,
-            ct);
+        await _repository.UpdateAsync(service, ct);
 
-        await _repository.SaveChangesAsync(
-            ct);
+        await _repository.SaveChangesAsync(ct);
 
         return new ChurchServiceDto(
             Id: service.Id,

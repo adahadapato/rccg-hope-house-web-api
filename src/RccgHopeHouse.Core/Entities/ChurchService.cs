@@ -1,6 +1,4 @@
-﻿using RccgHopeHouse.Core.Enums;
-
-namespace RccgHopeHouse.Core.Entities;
+﻿namespace RccgHopeHouse.Core.Entities;
 
 public class ChurchService : BaseEntity
 {
@@ -15,7 +13,10 @@ public class ChurchService : BaseEntity
     public string? ZoomPasscode { get; private set; }
     public bool IsActive { get; private set; } = true;
     public int DisplayOrder { get; private set; }
-    public RecurrencePattern Recurrence { get; private set; } = RecurrencePattern.Weekly;
+
+    public RecurrencePattern Recurrence { get; private set; }
+        = RecurrencePattern.Weekly;
+
     public int? DayOfMonth { get; private set; }
     public string? AdditionalInfo { get; private set; }
 
@@ -44,6 +45,17 @@ public class ChurchService : BaseEntity
     public bool ShowInMonthlyServices { get; private set; }
 
     /// <summary>
+    /// Controls whether video broadcasts may be associated with
+    /// this church service.
+    ///
+    /// This is deliberately independent of the service category
+    /// and its public website placement. A service may therefore
+    /// support broadcasts without requiring its category to be
+    /// hard-coded into the broadcast system.
+    /// </summary>
+    public bool IsBroadcastEnabled { get; private set; }
+
+    /// <summary>
     /// Monthly broadcasts associated directly with this service.
     /// </summary>
     public ICollection<ServiceBroadcast> Broadcasts { get; private set; }
@@ -64,7 +76,8 @@ public class ChurchService : BaseEntity
         int? dayOfMonth = null,
         bool isLocal = true,
         string? icon = null,
-        bool showInMonthlyServices = false)
+        bool showInMonthlyServices = false,
+        bool isBroadcastEnabled = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             name,
@@ -83,6 +96,7 @@ public class ChurchService : BaseEntity
             IsLocal = isLocal,
             Icon = NormalizeOptionalText(icon),
             ShowInMonthlyServices = showInMonthlyServices,
+            IsBroadcastEnabled = isBroadcastEnabled,
             DisplayOrder = 0,
             IsActive = true
         };
@@ -115,7 +129,8 @@ public class ChurchService : BaseEntity
         int? dayOfMonth,
         bool isLocal,
         string? icon = null,
-        bool showInMonthlyServices = false)
+        bool showInMonthlyServices = false,
+        bool isBroadcastEnabled = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             name,
@@ -132,6 +147,7 @@ public class ChurchService : BaseEntity
         IsLocal = isLocal;
         Icon = NormalizeOptionalText(icon);
         ShowInMonthlyServices = showInMonthlyServices;
+        IsBroadcastEnabled = isBroadcastEnabled;
 
         MarkAsUpdated();
     }
@@ -184,6 +200,20 @@ public class ChurchService : BaseEntity
         ShowInMonthlyServices = showInMonthlyServices;
         Icon = NormalizeOptionalText(icon);
 
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// Enables or disables video broadcasts for this service.
+    /// </summary>
+    public void SetBroadcastEnabled(bool isBroadcastEnabled)
+    {
+        if (IsBroadcastEnabled == isBroadcastEnabled)
+        {
+            return;
+        }
+
+        IsBroadcastEnabled = isBroadcastEnabled;
         MarkAsUpdated();
     }
 

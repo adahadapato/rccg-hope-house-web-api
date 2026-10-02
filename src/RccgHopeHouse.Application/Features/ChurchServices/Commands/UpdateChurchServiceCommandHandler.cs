@@ -39,7 +39,8 @@ public class UpdateChurchServiceCommandHandler
             request.DayOfMonth,
             request.IsLocal,
             request.Icon,
-            request.ShowInMonthlyServices);
+            request.ShowInMonthlyServices,
+            request.IsBroadcastEnabled);
 
         service.UpdateSchedule(
             request.StartTime,
@@ -75,6 +76,7 @@ public class UpdateChurchServiceCommandHandler
             service.IsActive,
             service.DisplayOrder,
             service.Icon,
-            service.ShowInMonthlyServices);
+            service.ShowInMonthlyServices,
+            service.IsBroadcastEnabled);
     }
 }

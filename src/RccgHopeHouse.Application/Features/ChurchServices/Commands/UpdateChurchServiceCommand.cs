@@ -20,5 +20,6 @@ public record UpdateChurchServiceCommand(
     bool IsLocal,
     int DisplayOrder,
     string? Icon,
-    bool ShowInMonthlyServices
+    bool ShowInMonthlyServices,
+    bool IsBroadcastEnabled
 ) : IRequest<ChurchServiceDto>;

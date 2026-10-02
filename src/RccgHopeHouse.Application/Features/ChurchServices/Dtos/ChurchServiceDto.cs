@@ -24,4 +24,5 @@ public record ChurchServiceDto(
     bool IsActive,
     int DisplayOrder,
     string? Icon,
-    bool ShowInMonthlyServices);
+    bool ShowInMonthlyServices,
+    bool IsBroadcastEnabled);

@@ -1,11 +1,11 @@
-﻿using System.Security.Claims;
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Configuration;
 using RccgHopeHouse.Application.Features.Admin.Roles.Commands;
 using RccgHopeHouse.Application.Features.Admin.Roles.Queries;
 using RccgHopeHouse.Application.Features.Admin.Users.Commands;
 using RccgHopeHouse.Application.Features.Admin.Users.Queries;
 using RccgHopeHouse.Core.Constants;
+using System.Security.Claims;
 
 namespace RccgHopeHouse.Api.Endpoints.Admin;
 
@@ -351,18 +351,16 @@ public static class AdminEndpoints
     private static string GetVerificationBaseUrl(
         IConfiguration configuration)
     {
-        var adminDashboardUrl =
-            configuration[
-                AppSettings.Application.AdminDashboardUrl];
+        var apiBaseUrl =
+            configuration["AppSettings:ApiBaseUrl"];
 
-        if (string.IsNullOrWhiteSpace(adminDashboardUrl))
+        if (string.IsNullOrWhiteSpace(apiBaseUrl))
         {
             throw new InvalidOperationException(
-                "The administrator dashboard URL is not configured.");
+                "The API base URL is not configured.");
         }
 
-        return
-            $"{adminDashboardUrl.TrimEnd('/')}/verify-email";
+        return $"{apiBaseUrl.TrimEnd('/')}/api/auth/confirm-email";
     }
 
     // ==================== Requests ====================

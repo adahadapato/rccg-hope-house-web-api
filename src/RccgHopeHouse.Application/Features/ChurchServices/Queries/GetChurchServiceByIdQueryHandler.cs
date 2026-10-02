@@ -44,6 +44,7 @@ public class GetChurchServiceByIdQueryHandler
             IsActive: service.IsActive,
             DisplayOrder: service.DisplayOrder,
             Icon: service.Icon,
-            ShowInMonthlyServices: service.ShowInMonthlyServices);
+            ShowInMonthlyServices: service.ShowInMonthlyServices,
+            IsBroadcastEnabled: service.IsBroadcastEnabled);
     }
 }

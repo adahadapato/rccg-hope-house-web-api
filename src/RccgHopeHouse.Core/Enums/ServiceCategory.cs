@@ -11,5 +11,6 @@ public enum ServiceCategory
     HouseFellowship = 7,
     SpecialEvent = 8,
     HolyCommunion = 9,
-    HolyGhostService = 10
+    HolyGhostService = 10,
+    DivineEncounter = 11,
 }

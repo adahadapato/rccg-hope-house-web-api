@@ -12,7 +12,8 @@ namespace RccgHopeHouse.Api.Endpoints.ChurchServices;
 /// Minimal API endpoints for church service schedules:
 /// public timetable and admin management.
 /// Supports recurrence patterns, Zoom integration,
-/// monthly-service visibility and day-based filtering.
+/// monthly-service visibility, broadcast configuration
+/// and day-based filtering.
 /// </summary>
 [Authorize]
 public static class ChurchServiceEndpoints
@@ -73,7 +74,8 @@ public static class ChurchServiceEndpoints
 
         admin.MapPut("/{id:guid}", UpdateAsync)
             .WithName("UpdateChurchService")
-            .WithSummary("Update service schedule and display settings")
+            .WithSummary(
+                "Update service schedule and display settings")
             .Produces<ChurchServiceDto>(
                 StatusCodes.Status200OK)
             .ProducesProblem(
@@ -89,6 +91,19 @@ public static class ChurchServiceEndpoints
             .WithName("ToggleChurchServiceActive")
             .WithSummary(
                 "Activate or deactivate a church service")
+            .Produces<ChurchServiceDto>(
+                StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status404NotFound)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized);
+
+        admin.MapPost(
+                "/{id:guid}/toggle-broadcast",
+                ToggleBroadcastAsync)
+            .WithName("ToggleChurchServiceBroadcast")
+            .WithSummary(
+                "Enable or disable broadcasting for a church service")
             .Produces<ChurchServiceDto>(
                 StatusCodes.Status200OK)
             .ProducesProblem(
@@ -190,7 +205,9 @@ public static class ChurchServiceEndpoints
                 DisplayOrder: request.DisplayOrder,
                 Icon: request.Icon,
                 ShowInMonthlyServices:
-                    request.ShowInMonthlyServices);
+                    request.ShowInMonthlyServices,
+                IsBroadcastEnabled:
+                    request.IsBroadcastEnabled);
 
         var result = await mediator.Send(
             command,
@@ -226,7 +243,9 @@ public static class ChurchServiceEndpoints
                 DisplayOrder: request.DisplayOrder,
                 Icon: request.Icon,
                 ShowInMonthlyServices:
-                    request.ShowInMonthlyServices);
+                    request.ShowInMonthlyServices,
+                IsBroadcastEnabled:
+                    request.IsBroadcastEnabled);
 
         var result = await mediator.Send(
             command,
@@ -242,6 +261,21 @@ public static class ChurchServiceEndpoints
     {
         var command =
             new ToggleActiveCommand(id);
+
+        var result = await mediator.Send(
+            command,
+            cancellationToken);
+
+        return TypedResults.Ok(result);
+    }
+
+    private static async Task<IResult> ToggleBroadcastAsync(
+        Guid id,
+        [FromServices] IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var command =
+            new ToggleBroadcastCommand(id);
 
         var result = await mediator.Send(
             command,
@@ -283,7 +317,8 @@ public record CreateChurchServiceRequest(
     bool IsLocal = true,
     int DisplayOrder = 0,
     string? Icon = null,
-    bool ShowInMonthlyServices = false);
+    bool ShowInMonthlyServices = false,
+    bool IsBroadcastEnabled = false);
 
 public record UpdateChurchServiceRequest(
     string Name,
@@ -300,4 +335,5 @@ public record UpdateChurchServiceRequest(
     bool IsLocal,
     int DisplayOrder,
     string? Icon,
-    bool ShowInMonthlyServices);
+    bool ShowInMonthlyServices,
+    bool IsBroadcastEnabled);

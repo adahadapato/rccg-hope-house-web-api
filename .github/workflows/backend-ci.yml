@@ -67,8 +67,9 @@ jobs:
       #
       # IMPORTANT:
       # Upload the artifact BEFORE injecting production secrets.
-      # This prevents the API.Bible key from being stored inside
-      # the GitHub Actions artifact.
+      #
+      # This prevents the API.Bible key and email passwords from
+      # being stored inside the GitHub Actions artifact.
       # ============================================================
 
       - name: Upload production artifact
@@ -82,11 +83,17 @@ jobs:
       # ============================================================
       # PRODUCTION CONFIGURATION
       #
-      # API.Bible authentication is configured locally using
-      # .NET User Secrets. User Secrets are not deployed.
+      # Sensitive configuration is stored locally using .NET User
+      # Secrets during development. User Secrets are not deployed.
       #
-      # In production the API key is supplied securely through
-      # the API_BIBLE_KEY GitHub Actions repository secret.
+      # In production, sensitive values are supplied securely through
+      # GitHub Actions repository secrets.
+      #
+      # Required GitHub repository secrets:
+      #
+      # API_BIBLE_KEY
+      # EMAIL_ADMIN_PASSWORD
+      # EMAIL_INFO_PASSWORD
       #
       # This step runs AFTER artifact upload so the GitHub artifact
       # remains free of production secrets.
@@ -95,11 +102,13 @@ jobs:
       # are build/test operations and are not deployed.
       # ============================================================
 
-      - name: Configure API.Bible production key
+      - name: Configure production secrets
         if: github.event_name != 'pull_request'
         shell: powershell
         env:
           API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
+          EMAIL_ADMIN_PASSWORD: ${{ secrets.EMAIL_ADMIN_PASSWORD }}
+          EMAIL_INFO_PASSWORD: ${{ secrets.EMAIL_INFO_PASSWORD }}
         run: |
           $configPath = ".\publish\appsettings.json"
 
@@ -107,25 +116,73 @@ jobs:
               throw "Published appsettings.json was not found at: $configPath"
           }
 
+          # --------------------------------------------------------
+          # Validate GitHub secrets
+          # --------------------------------------------------------
+
           if ([string]::IsNullOrWhiteSpace($env:API_BIBLE_KEY)) {
               throw "API_BIBLE_KEY GitHub secret is not configured."
           }
 
-          Write-Host "Applying API.Bible production configuration..."
+          if ([string]::IsNullOrWhiteSpace($env:EMAIL_ADMIN_PASSWORD)) {
+              throw "EMAIL_ADMIN_PASSWORD GitHub secret is not configured."
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:EMAIL_INFO_PASSWORD)) {
+              throw "EMAIL_INFO_PASSWORD GitHub secret is not configured."
+          }
+
+          Write-Host "Applying RCCG Hope House production configuration..."
+
+          # --------------------------------------------------------
+          # Load published appsettings.json
+          # --------------------------------------------------------
 
           $config = Get-Content $configPath -Raw | ConvertFrom-Json
+
+          # --------------------------------------------------------
+          # Validate required configuration sections
+          # --------------------------------------------------------
 
           if ($null -eq $config.ApiBible) {
               throw "ApiBible configuration section was not found in appsettings.json."
           }
 
+          if ($null -eq $config.EmailSettings) {
+              throw "EmailSettings configuration section was not found in appsettings.json."
+          }
+
+          # --------------------------------------------------------
+          # API.Bible
+          # --------------------------------------------------------
+
           $config.ApiBible.ApiKey = $env:API_BIBLE_KEY
+
+          # --------------------------------------------------------
+          # RCCG Hope House Email
+          #
+          # admin@rccghopehouse.org.uk
+          #     System/account/admin emails
+          #
+          # info@rccghopehouse.org.uk
+          #     Public correspondence/newsletters
+          # --------------------------------------------------------
+
+          $config.EmailSettings.AdminPassword = $env:EMAIL_ADMIN_PASSWORD
+          $config.EmailSettings.InfoPassword = $env:EMAIL_INFO_PASSWORD
+
+          # --------------------------------------------------------
+          # Save production configuration
+          # --------------------------------------------------------
 
           $config |
               ConvertTo-Json -Depth 100 |
               Set-Content $configPath -Encoding UTF8
 
-          Write-Host "API.Bible production configuration applied successfully."
+          Write-Host "Production configuration applied successfully."
+          Write-Host "API.Bible key configured."
+          Write-Host "Admin email credentials configured."
+          Write-Host "Info email credentials configured."
 
 
       # ============================================================

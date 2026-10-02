@@ -6,11 +6,21 @@ namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// Configuration for ChurchService schedule,
-/// presentation, location and Zoom metadata.
+/// presentation, location, Zoom metadata,
+/// monthly-service visibility and broadcast settings.
 /// </summary>
 public class ChurchServiceConfiguration
     : IEntityTypeConfiguration<ChurchService>
 {
+    /// <summary>
+    /// Configures the database mapping, constraints,
+    /// indexes and relationships for
+    /// <see cref="ChurchService"/>.
+    /// </summary>
+    /// <param name="builder">
+    /// Entity Framework configuration builder
+    /// for the ChurchService entity.
+    /// </param>
     public void Configure(
         EntityTypeBuilder<ChurchService> builder)
     {
@@ -48,8 +58,25 @@ public class ChurchServiceConfiguration
                 service => service.Icon)
             .HasMaxLength(50);
 
+        /// <summary>
+        /// Controls whether the service is displayed
+        /// in the public Monthly Services section.
+        /// </summary>
         builder.Property(
                 service => service.ShowInMonthlyServices)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        /// <summary>
+        /// Controls whether broadcasts associated with
+        /// this church service are eligible to appear
+        /// in the public service broadcast feed.
+        ///
+        /// Defaults to false so existing and newly created
+        /// services are not automatically broadcast-enabled.
+        /// </summary>
+        builder.Property(
+                service => service.IsBroadcastEnabled)
             .IsRequired()
             .HasDefaultValue(false);
 
@@ -69,6 +96,22 @@ public class ChurchServiceConfiguration
             service =>
                 service.ShowInMonthlyServices);
 
+        /// <summary>
+        /// Supports efficient filtering of church services
+        /// when retrieving public broadcast content.
+        /// </summary>
+        builder.HasIndex(
+            service =>
+                service.IsBroadcastEnabled);
+
+        /// <summary>
+        /// A church service can have multiple historical
+        /// broadcasts, while each ServiceBroadcast belongs
+        /// to one specific ChurchService.
+        ///
+        /// ChurchServiceId is the authoritative relationship
+        /// between a broadcast and its service.
+        /// </summary>
         builder.HasMany(
                 service =>
                     service.Broadcasts)
