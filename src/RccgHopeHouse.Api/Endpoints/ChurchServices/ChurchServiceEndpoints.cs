@@ -47,6 +47,13 @@ public static class ChurchServiceEndpoints
                 StatusCodes.Status404NotFound)
             .AllowAnonymous();
 
+        services.MapGet("/categories", GetCategoriesAsync)
+            .WithName("GetChurchServiceCategories")
+            .WithSummary("Get available church service categories")
+            .WithDescription("Returns every category defined by the church service category enum.")
+            .Produces<IReadOnlyList<string>>(StatusCodes.Status200OK)
+            .AllowAnonymous();
+
         services.MapGet("/today", GetTodayAsync)
             .WithName("GetTodayServices")
             .WithSummary("Get today's service schedule")
@@ -297,6 +304,35 @@ public static class ChurchServiceEndpoints
             cancellationToken);
 
         return TypedResults.NoContent();
+    }
+
+    /// <summary>
+    /// Gets every available church service category through
+    /// the application CQRS pipeline.
+    /// </summary>
+    /// <param name="mediator">
+    /// Mediator used to dispatch the service categories query.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Token used to observe cancellation requests.
+    /// </param>
+    /// <returns>
+    /// An HTTP 200 response containing all church service
+    /// category names.
+    /// </returns>
+    private static async Task<IResult> GetCategoriesAsync(
+        [FromServices] IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var query =
+            new GetChruchServiceCategoriesQuery();
+
+        var categories =
+            await mediator.Send(
+                query,
+                cancellationToken);
+
+        return TypedResults.Ok(categories);
     }
 }
 

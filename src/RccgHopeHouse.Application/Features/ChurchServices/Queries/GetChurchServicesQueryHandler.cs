@@ -7,10 +7,7 @@ namespace RccgHopeHouse.Application.Features.ChurchServices.Queries;
 /// <summary>
 /// Handler for fetching filtered, paginated service schedules.
 /// </summary>
-public class GetChurchServicesQueryHandler
-    : IRequestHandler<
-        GetChurchServicesQuery,
-        IReadOnlyList<ChurchServiceFeedDto>>
+public class GetChurchServicesQueryHandler: IRequestHandler<GetChurchServicesQuery, IReadOnlyList<ChurchServiceFeedDto>>
 {
     private readonly IChurchServiceRepository _repository;
 
