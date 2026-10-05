@@ -24,8 +24,27 @@ using RccgHopeHouse.Api.Endpoints.ServiceBroadcasts;
 using RccgHopeHouse.Api.Endpoints.ThemesOfTheYear;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ==================== Logging ====================
+//
+// Configure Serilog from appsettings.json.
+//
+// Existing ILogger<T> calls throughout the application continue to use
+// the standard Microsoft logging abstractions. Serilog acts as the
+// underlying provider and writes those messages to the configured sinks,
+// including the rolling production log file.
+builder.Host.UseSerilog(
+    (context, services, configuration) =>
+    {
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext();
+    });
+
 
 // ==================== Gallery File Storage ====================
 //

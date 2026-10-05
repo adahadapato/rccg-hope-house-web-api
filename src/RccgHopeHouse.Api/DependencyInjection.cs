@@ -55,7 +55,7 @@ public static class DependencyInjection
                 {
                     Email = "enobong.adahada@gmail.com",
                     Name = "Enobong Adahada",
-                    Url = new Uri("https://wwww.zayun.biz")
+                    Url = new Uri("https://wwww.zayun.net")
                 },
                 License = new OpenApiLicense
                 {
