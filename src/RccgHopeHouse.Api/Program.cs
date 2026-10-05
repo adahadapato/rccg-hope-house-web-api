@@ -64,6 +64,7 @@ builder.Configuration["GalleryStorage:WebRootPath"] =
 builder.Services.AddApi(builder.Configuration);
 
 var app = builder.Build();
+app.Logger.LogInformation("RCCG Hope House API started successfully.");
 
 // ==================== Middleware Pipeline ====================
 if (app.Environment.IsDevelopment())
