@@ -1,4 +1,7 @@
-﻿using MediatR;
+﻿/*This class helps synchronize service broadcasts from configured YouTube channels
+ using AI to clean broadcast descriptions*/
+
+using MediatR;
 using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Enums;
 using RccgHopeHouse.Core.Interfaces;
