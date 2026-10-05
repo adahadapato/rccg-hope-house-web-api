@@ -2,7 +2,6 @@
 using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Enums;
 using RccgHopeHouse.Core.Interfaces;
-using RccgHopeHouse.Infrastructure.Persistence;
 
 namespace RccgHopeHouse.Infrastructure.Persistence.Repositories;
 
@@ -10,16 +9,7 @@ namespace RccgHopeHouse.Infrastructure.Persistence.Repositories;
 /// EF Core implementation of
 /// <see cref="IServiceBroadcastRepository"/>.
 /// </summary>
-/// <remarks>
-/// Public latest-broadcast retrieval is based on the related
-/// <see cref="ChurchService"/> configuration. A service must be
-/// active and have broadcasting enabled.
-///
-/// Category-based methods are retained for existing functionality,
-/// but service categories do not determine whether a service is
-/// eligible to appear in the public broadcast feed.
-/// </remarks>
-public class ServiceBroadcastRepository
+public sealed class ServiceBroadcastRepository
     : IServiceBroadcastRepository
 {
     private readonly ApplicationDbContext _context;
@@ -42,10 +32,82 @@ public class ServiceBroadcastRepository
         Guid id,
         CancellationToken ct = default) =>
         await _context.ServiceBroadcasts
-            .AsNoTracking()
             .FirstOrDefaultAsync(
-                b => b.Id == id,
+                broadcast => broadcast.Id == id,
                 ct);
+
+    /// <inheritdoc />
+    public async Task<ServiceBroadcast?> GetByVideoIdAsync(
+        string videoId,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            videoId,
+            nameof(videoId));
+
+        var normalizedVideoId =
+            videoId.Trim();
+
+        return await _context.ServiceBroadcasts
+            .FirstOrDefaultAsync(
+                broadcast =>
+                    broadcast.VideoId == normalizedVideoId,
+                ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceBroadcast?> GetByServiceAndMonthAsync(
+        Guid churchServiceId,
+        DateTime serviceMonth,
+        CancellationToken ct = default)
+    {
+        if (churchServiceId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A church service is required.",
+                nameof(churchServiceId));
+        }
+
+        var monthStart =
+            new DateTime(
+                serviceMonth.Year,
+                serviceMonth.Month,
+                1);
+
+        var nextMonth =
+            monthStart.AddMonths(1);
+
+        return await _context.ServiceBroadcasts
+            .FirstOrDefaultAsync(
+                broadcast =>
+                    broadcast.ChurchServiceId == churchServiceId &&
+                    broadcast.ServiceMonth >= monthStart &&
+                    broadcast.ServiceMonth < nextMonth,
+                ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ServiceBroadcast>>
+        GetByChurchServiceIdAsync(
+            Guid churchServiceId,
+            CancellationToken ct = default)
+    {
+        if (churchServiceId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A church service is required.",
+                nameof(churchServiceId));
+        }
+
+        return await _context.ServiceBroadcasts
+            .Where(
+                broadcast =>
+                    broadcast.ChurchServiceId == churchServiceId)
+            .OrderByDescending(
+                broadcast =>
+                    broadcast.ServiceMonth)
+            .ToListAsync(ct);
+    }
 
     /// <inheritdoc />
     public async Task<ServiceBroadcast?> GetLatestByCategoryAsync(
@@ -54,9 +116,14 @@ public class ServiceBroadcastRepository
         await _context.ServiceBroadcasts
             .AsNoTracking()
             .Where(
-                b => b.Category == category)
+                broadcast =>
+                    broadcast.Category == category &&
+                    broadcast.IsPublished &&
+                    broadcast.ChurchService.IsActive &&
+                    broadcast.ChurchService.IsBroadcastEnabled)
             .OrderByDescending(
-                b => b.ServiceMonth)
+                broadcast =>
+                    broadcast.ServiceMonth)
             .FirstOrDefaultAsync(ct);
 
     /// <inheritdoc />
@@ -64,44 +131,26 @@ public class ServiceBroadcastRepository
         GetLatestForBroadcastEnabledServicesAsync(
             CancellationToken ct = default)
     {
-        /*
-         * Retrieve broadcasts only for church services that:
-         *
-         * 1. are currently active; and
-         * 2. explicitly have broadcasting enabled.
-         *
-         * This replaces the previous hard-coded category list.
-         * The ChurchService relationship is authoritative for
-         * deciding whether a broadcast belongs in the public feed.
-         */
         var broadcasts =
             await _context.ServiceBroadcasts
                 .AsNoTracking()
                 .Where(
-                    b =>
-                        b.ChurchService.IsActive &&
-                        b.ChurchService.IsBroadcastEnabled)
+                    broadcast =>
+                        broadcast.IsPublished &&
+                        broadcast.ChurchService.IsActive &&
+                        broadcast.ChurchService.IsBroadcastEnabled)
                 .OrderByDescending(
-                    b => b.ServiceMonth)
+                    broadcast =>
+                        broadcast.ServiceMonth)
                 .ToListAsync(ct);
 
-        /*
-         * A church service can have multiple historical broadcasts.
-         *
-         * Because the records above are already ordered from newest
-         * to oldest, taking the first record from each ChurchServiceId
-         * group gives us the latest broadcast for that particular
-         * church service.
-         *
-         * Grouping by ChurchServiceId rather than Category is
-         * important because multiple individual church services may
-         * legitimately share the same ServiceCategory.
-         */
         return broadcasts
             .GroupBy(
-                b => b.ChurchServiceId)
+                broadcast =>
+                    broadcast.ChurchServiceId)
             .Select(
-                group => group.First())
+                group =>
+                    group.First())
             .ToList();
     }
 
@@ -115,9 +164,14 @@ public class ServiceBroadcastRepository
         await _context.ServiceBroadcasts
             .AsNoTracking()
             .Where(
-                b => b.Category == category)
+                broadcast =>
+                    broadcast.Category == category &&
+                    broadcast.IsPublished &&
+                    broadcast.ChurchService.IsActive &&
+                    broadcast.ChurchService.IsBroadcastEnabled)
             .OrderByDescending(
-                b => b.ServiceMonth)
+                broadcast =>
+                    broadcast.ServiceMonth)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);
@@ -131,9 +185,11 @@ public class ServiceBroadcastRepository
         await _context.ServiceBroadcasts
             .AsNoTracking()
             .OrderByDescending(
-                b => b.ServiceMonth)
+                broadcast =>
+                    broadcast.ServiceMonth)
             .ThenBy(
-                b => b.Category)
+                broadcast =>
+                    broadcast.Category)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);

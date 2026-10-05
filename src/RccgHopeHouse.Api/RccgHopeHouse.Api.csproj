@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML warnings -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <UserSecretsId>475c39a7-1338-422b-9b47-78432b3c4a78</UserSecretsId>
   </PropertyGroup>
 
@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RccgHopeHouse.Infrastructure\RccgHopeHouse.Infrastructure.csproj" />
+    <ProjectReference Include="..\RccgHopeHouse.Worker\RccgHopeHouse.Worker.csproj" />
   </ItemGroup>
 
   <ItemGroup>

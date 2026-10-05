@@ -68,8 +68,8 @@ jobs:
       # IMPORTANT:
       # Upload the artifact BEFORE injecting production secrets.
       #
-      # This prevents the API.Bible key and email passwords from
-      # being stored inside the GitHub Actions artifact.
+      # This prevents API keys and email passwords from being stored
+      # inside the GitHub Actions artifact.
       # ============================================================
 
       - name: Upload production artifact
@@ -94,6 +94,11 @@ jobs:
       # API_BIBLE_KEY
       # EMAIL_ADMIN_PASSWORD
       # EMAIL_INFO_PASSWORD
+      # OPENAI_API_KEY
+      # YOUTUBE_API_KEY
+      #
+      # OpenAI:Model remains in appsettings.json because the model
+      # name is configuration rather than a secret.
       #
       # This step runs AFTER artifact upload so the GitHub artifact
       # remains free of production secrets.
@@ -109,6 +114,8 @@ jobs:
           API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
           EMAIL_ADMIN_PASSWORD: ${{ secrets.EMAIL_ADMIN_PASSWORD }}
           EMAIL_INFO_PASSWORD: ${{ secrets.EMAIL_INFO_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
           $configPath = ".\publish\appsettings.json"
 
@@ -132,6 +139,14 @@ jobs:
               throw "EMAIL_INFO_PASSWORD GitHub secret is not configured."
           }
 
+          if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
+              throw "OPENAI_API_KEY GitHub secret is not configured."
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:YOUTUBE_API_KEY)) {
+              throw "YOUTUBE_API_KEY GitHub secret is not configured."
+          }
+
           Write-Host "Applying RCCG Hope House production configuration..."
 
           # --------------------------------------------------------
@@ -152,11 +167,34 @@ jobs:
               throw "EmailSettings configuration section was not found in appsettings.json."
           }
 
+          if ($null -eq $config.OpenAI) {
+              throw "OpenAI configuration section was not found in appsettings.json."
+          }
+
+          if ($null -eq $config.YouTube) {
+              throw "YouTube configuration section was not found in appsettings.json."
+          }
+
           # --------------------------------------------------------
           # API.Bible
           # --------------------------------------------------------
 
           $config.ApiBible.ApiKey = $env:API_BIBLE_KEY
+
+          # --------------------------------------------------------
+          # OpenAI
+          #
+          # Only the API key is injected here.
+          # The configured model remains in appsettings.json.
+          # --------------------------------------------------------
+
+          $config.OpenAI.ApiKey = $env:OPENAI_API_KEY
+
+          # --------------------------------------------------------
+          # YouTube Data API
+          # --------------------------------------------------------
+
+          $config.YouTube.ApiKey = $env:YOUTUBE_API_KEY
 
           # --------------------------------------------------------
           # RCCG Hope House Email
@@ -181,6 +219,8 @@ jobs:
 
           Write-Host "Production configuration applied successfully."
           Write-Host "API.Bible key configured."
+          Write-Host "OpenAI API key configured."
+          Write-Host "YouTube API key configured."
           Write-Host "Admin email credentials configured."
           Write-Host "Info email credentials configured."
 

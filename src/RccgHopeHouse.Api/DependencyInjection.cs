@@ -9,6 +9,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
+using RccgHopeHouse.Worker;
+
 namespace RccgHopeHouse.Api;
 
 /// <summary>
@@ -24,6 +26,7 @@ public static class DependencyInjection
     {
         // 1. Compose Infrastructure (which composes Application)
         services.AddInfrastructure(configuration);
+        services.AddWorker();
 
         // 2. Core API Services
         services.AddEndpointsApiExplorer();
@@ -197,6 +200,7 @@ public static class DependencyInjection
 
         // 9. Distributed Cache (used by rate limiter / other infra)
         services.AddDistributedMemoryCache();
+       
 
         return services;
     }

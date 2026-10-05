@@ -4,9 +4,20 @@ using RccgHopeHouse.Core.Entities;
 
 namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 
-public class ServiceBroadcastConfiguration
+/// <summary>
+/// Configures persistence rules for the
+/// <see cref="ServiceBroadcast"/> entity.
+/// </summary>
+public sealed class ServiceBroadcastConfiguration
     : IEntityTypeConfiguration<ServiceBroadcast>
 {
+    /// <summary>
+    /// Configures the database mapping, constraints, and indexes
+    /// for service broadcasts.
+    /// </summary>
+    /// <param name="builder">
+    /// The entity type builder used to configure the mapping.
+    /// </param>
     public void Configure(
         EntityTypeBuilder<ServiceBroadcast> builder)
     {
@@ -31,7 +42,7 @@ public class ServiceBroadcastConfiguration
         builder.Property(
                 broadcast =>
                     broadcast.Description)
-            .HasMaxLength(1000);
+            .HasColumnType("nvarchar(max)");
 
         builder.Property(
                 broadcast =>
@@ -42,6 +53,12 @@ public class ServiceBroadcastConfiguration
                 broadcast =>
                     broadcast.ChurchServiceId)
             .IsRequired();
+
+        builder.Property(
+                broadcast =>
+                    broadcast.IsPublished)
+            .IsRequired()
+            .HasDefaultValue(true);
 
         builder.Ignore(
             broadcast =>

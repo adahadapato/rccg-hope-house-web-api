@@ -5,8 +5,9 @@ namespace RccgHopeHouse.Core.Interfaces;
 
 /// <summary>
 /// Defines persistence operations for service broadcasts.
-/// Supports public retrieval of the latest broadcasts for
+/// Supports public retrieval of published broadcasts for
 /// broadcast-enabled church services, category-based history,
+/// synchronization lookups, publication management,
 /// and administrative CRUD operations.
 /// </summary>
 public interface IServiceBroadcastRepository
@@ -29,8 +30,68 @@ public interface IServiceBroadcastRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the current/latest broadcast for a category.
-    /// Retained for existing category-based functionality.
+    /// Gets a service broadcast by its YouTube video identifier.
+    /// </summary>
+    /// <param name="videoId">
+    /// The unique YouTube video identifier.
+    /// </param>
+    /// <param name="ct">
+    /// Cancellation token.
+    /// </param>
+    /// <returns>
+    /// The matching service broadcast, or <c>null</c>
+    /// when no broadcast exists for the supplied video.
+    /// </returns>
+    Task<ServiceBroadcast?> GetByVideoIdAsync(
+        string videoId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the broadcast for a specific church service
+    /// and service month.
+    /// </summary>
+    /// <param name="churchServiceId">
+    /// The church service identifier.
+    /// </param>
+    /// <param name="serviceMonth">
+    /// A date within the required service month.
+    /// </param>
+    /// <param name="ct">
+    /// Cancellation token.
+    /// </param>
+    /// <returns>
+    /// The matching broadcast, or <c>null</c> when no
+    /// broadcast exists for that service and month.
+    /// </returns>
+    Task<ServiceBroadcast?> GetByServiceAndMonthAsync(
+        Guid churchServiceId,
+        DateTime serviceMonth,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets all broadcasts belonging to a specific church service.
+    /// This is used when managing publication state so that an older
+    /// broadcast can be unpublished when a newer broadcast becomes
+    /// the current published broadcast.
+    /// </summary>
+    /// <param name="churchServiceId">
+    /// The church service identifier.
+    /// </param>
+    /// <param name="ct">
+    /// Cancellation token.
+    /// </param>
+    /// <returns>
+    /// Broadcasts belonging to the supplied church service,
+    /// ordered from newest to oldest.
+    /// </returns>
+    Task<IReadOnlyList<ServiceBroadcast>>
+        GetByChurchServiceIdAsync(
+            Guid churchServiceId,
+            CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the current/latest published broadcast for a category.
+    /// Retained for existing category-based public functionality.
     /// </summary>
     /// <param name="category">
     /// The service category to search.
@@ -39,41 +100,29 @@ public interface IServiceBroadcastRepository
     /// Cancellation token.
     /// </param>
     /// <returns>
-    /// The latest broadcast for the supplied category,
-    /// or <c>null</c> when no broadcast exists.
+    /// The latest published broadcast for the supplied category,
+    /// or <c>null</c> when no published broadcast exists.
     /// </returns>
     Task<ServiceBroadcast?> GetLatestByCategoryAsync(
         ServiceCategory category,
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the latest broadcast for each active church service
-    /// that has broadcasting enabled.
+    /// Gets the latest published broadcast for each active church
+    /// service that has broadcasting enabled.
     /// </summary>
-    /// <remarks>
-    /// Broadcast eligibility is determined by the related
-    /// <see cref="ChurchService.IsBroadcastEnabled"/> property,
-    /// rather than by a hard-coded list of service categories.
-    ///
-    /// <see cref="ServiceBroadcast.ChurchServiceId"/> is the
-    /// authoritative relationship used to group broadcasts
-    /// by church service.
-    /// </remarks>
     /// <param name="ct">
     /// Cancellation token.
     /// </param>
     /// <returns>
-    /// A collection containing the latest broadcast for each
-    /// active, broadcast-enabled church service that has at
-    /// least one broadcast.
+    /// The latest published broadcast for each eligible church service.
     /// </returns>
     Task<IReadOnlyList<ServiceBroadcast>>
         GetLatestForBroadcastEnabledServicesAsync(
             CancellationToken ct = default);
 
     /// <summary>
-    /// Gets broadcast history for a category.
-    /// Retained for existing category-based functionality.
+    /// Gets published broadcast history for a category.
     /// </summary>
     /// <param name="category">
     /// The service category to search.
@@ -88,7 +137,7 @@ public interface IServiceBroadcastRepository
     /// Cancellation token.
     /// </param>
     /// <returns>
-    /// Broadcasts belonging to the supplied category,
+    /// Published broadcasts belonging to the supplied category,
     /// ordered from newest to oldest.
     /// </returns>
     Task<IReadOnlyList<ServiceBroadcast>>
@@ -100,7 +149,8 @@ public interface IServiceBroadcastRepository
 
     /// <summary>
     /// Gets all service broadcasts for administration,
-    /// ordered from newest to oldest.
+    /// including unpublished broadcasts, ordered from newest
+    /// to oldest.
     /// </summary>
     /// <param name="skip">
     /// The number of records to skip.
@@ -121,10 +171,10 @@ public interface IServiceBroadcastRepository
             CancellationToken ct = default);
 
     /// <summary>
-    /// Adds a new service broadcast to the repository.
+    /// Adds a new service broadcast.
     /// </summary>
     /// <param name="broadcast">
-    /// The service broadcast to add.
+    /// Broadcast to add.
     /// </param>
     /// <param name="ct">
     /// Cancellation token.
@@ -137,7 +187,7 @@ public interface IServiceBroadcastRepository
     /// Marks an existing service broadcast for update.
     /// </summary>
     /// <param name="broadcast">
-    /// The service broadcast to update.
+    /// Broadcast to update.
     /// </param>
     /// <param name="ct">
     /// Cancellation token.
@@ -150,7 +200,7 @@ public interface IServiceBroadcastRepository
     /// Marks a service broadcast for deletion.
     /// </summary>
     /// <param name="broadcast">
-    /// The service broadcast to delete.
+    /// Broadcast to delete.
     /// </param>
     /// <param name="ct">
     /// Cancellation token.
@@ -160,7 +210,7 @@ public interface IServiceBroadcastRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Persists pending repository changes to the database.
+    /// Persists pending repository changes.
     /// </summary>
     /// <param name="ct">
     /// Cancellation token.

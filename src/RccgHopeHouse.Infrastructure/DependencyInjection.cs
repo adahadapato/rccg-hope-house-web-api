@@ -6,12 +6,14 @@ using RccgHopeHouse.Application;
 using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Interfaces;
 using RccgHopeHouse.Core.Interfaces.Admin;
+using RccgHopeHouse.Core.Interfaces.AI;
 using RccgHopeHouse.Infrastructure.Bible;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories.Admin;
 using RccgHopeHouse.Infrastructure.Services;
+using RccgHopeHouse.Infrastructure.Services.AI;
 
 namespace RccgHopeHouse.Infrastructure;
 
@@ -77,54 +79,93 @@ public static class DependencyInjection
         services.AddScoped<ISermonRepository, SermonRepository>();
         services.AddScoped<IPastorPostRepository, PastorPostRepository>();
         services.AddScoped<IGalleryRepository, GalleryRepository>();
-        services.AddScoped<IGalleryCategoryRepository, GalleryCategoryRepository>();
-        services.AddScoped<IPrayerRequestRepository, PrayerRequestRepository>();
-        services.AddScoped<IChurchServiceRepository, ChurchServiceRepository>();
+        services.AddScoped<
+            IGalleryCategoryRepository,
+            GalleryCategoryRepository>();
+
+        services.AddScoped<
+            IPrayerRequestRepository,
+            PrayerRequestRepository>();
+
+        services.AddScoped<
+            IChurchServiceRepository,
+            ChurchServiceRepository>();
+
         services.AddScoped<IContactUsRepository, ContactUsRepository>();
-        services.AddScoped<IThemeOfTheYearRepository, ThemeOfTheYearRepository>();
+
+        services.AddScoped<
+            IThemeOfTheYearRepository,
+            ThemeOfTheYearRepository>();
+
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<IChurchInfoRepository, ChurchInfoRepository>();
-        services.AddScoped<IServiceBroadcastRepository, ServiceBroadcastRepository>();
+
+        services.AddScoped<
+            IServiceBroadcastRepository,
+            ServiceBroadcastRepository>();
+
         services.AddScoped<IGivingTypeRepository, GivingTypeRepository>();
         services.AddScoped<IOfferingRepository, OfferingRepository>();
-        services.AddScoped<IProphecyYearRepository, ProphecyYearRepository>();
-        services.AddScoped<IProphecyCategoryRepository, ProphecyCategoryRepository>();
+
+        services.AddScoped<
+            IProphecyYearRepository,
+            ProphecyYearRepository>();
+
+        services.AddScoped<
+            IProphecyCategoryRepository,
+            ProphecyCategoryRepository>();
+
         services.AddScoped<IProphecyRepository, ProphecyRepository>();
         services.AddScoped<IAdminRepository, AdminRepository>();
-        services.AddScoped<IAnnualPrayerRepository, AnnualPrayerRepository>();
+
+        services.AddScoped<
+            IAnnualPrayerRepository,
+            AnnualPrayerRepository>();
+
         services.AddScoped<IChurchEventRepository, ChurchEventRepository>();
         services.AddScoped<IDevotionalRepository, DevotionalRepository>();
-        services.AddScoped<IBibleReferenceService, BibleReferenceService>();
 
-
+        services.AddScoped<
+            IBibleReferenceService,
+            BibleReferenceService>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<IImageStorageService, ImageStorageService>();
-        services.AddScoped<IGalleryImageStorage, FileSystemGalleryImageStorageService>();
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<
+            IImageStorageService,
+            ImageStorageService>();
+
+        services.AddScoped<
+            IGalleryImageStorage,
+            FileSystemGalleryImageStorageService>();
+
+        services.AddScoped<
+            ICurrentUserService,
+            CurrentUserService>();
+
         services.AddScoped<IAccountService, AccountService>();
 
         // 7. YouTube API
-        //
-        // A typed HttpClient registration also registers
-        // IYouTubeService, so a separate AddScoped registration
-        // is unnecessary.
-        services.AddHttpClient<IYouTubeService, YouTubeService>(client =>
-            {
-                client.BaseAddress =
-                    new Uri(
-                        "https://www.googleapis.com/youtube/v3/");
+        services.AddScoped<
+            IYouTubeService,
+            YouTubeService>();
 
-                client.DefaultRequestHeaders.Add(
-                    "User-Agent",
-                    "RCCG-HopeHouse-Website/1.0");
-            });
+        // 8. AI service broadcast description cleaner
+        services.AddHttpClient<
+            IServiceBroadcastDescriptionCleaner,
+            ServiceBroadcastDescriptionCleaner>();
 
-        // 8. API.Bible
-        services.Configure<ApiBibleOptions>(configuration.GetSection(ApiBibleOptions.SectionName));
-        services.AddHttpClient<IApiBibleService, ApiBibleService>((serviceProvider, client) =>
+        // 9. API.Bible
+        services.Configure<ApiBibleOptions>(
+            configuration.GetSection(
+                ApiBibleOptions.SectionName));
+
+        services.AddHttpClient<
+            IApiBibleService,
+            ApiBibleService>(
+            (serviceProvider, client) =>
             {
                 var options =
                     serviceProvider
@@ -133,15 +174,22 @@ public static class DependencyInjection
                                 .IOptions<ApiBibleOptions>>()
                         .Value;
 
-                client.BaseAddress = new Uri(options.BaseUrl);
-                client.DefaultRequestHeaders.Add("api-key", options.ApiKey);
-                client.DefaultRequestHeaders.Add("User-Agent", "RCCG-HopeHouse-Website/1.0");
+                client.BaseAddress =
+                    new Uri(options.BaseUrl);
+
+                client.DefaultRequestHeaders.Add(
+                    "api-key",
+                    options.ApiKey);
+
+                client.DefaultRequestHeaders.Add(
+                    "User-Agent",
+                    "RCCG-HopeHouse-Website/1.0");
             });
 
-        // 9. Caching
+        // 10. Caching
         services.AddMemoryCache();
 
-        // 10. Notification settings
+        // 11. Notification settings
         services.AddSingleton(
             new NotificationSettings(
                 configuration[

@@ -3,7 +3,10 @@ using RccgHopeHouse.Core.Enums;
 
 namespace RccgHopeHouse.Application.Features.ServiceBroadcasts.Dtos;
 
-public record ServiceBroadcastDto(
+/// <summary>
+/// Represents service broadcast information returned by the application.
+/// </summary>
+public sealed record ServiceBroadcastDto(
     Guid Id,
     Guid ChurchServiceId,
     ServiceCategory Category,
@@ -14,8 +17,18 @@ public record ServiceBroadcastDto(
     string? Description,
     string? Theme,
     DateTime ServiceMonth,
-    bool IsLive)
+    bool IsLive,
+    bool IsPublished)
 {
+    /// <summary>
+    /// Creates a service broadcast DTO from a domain entity.
+    /// </summary>
+    /// <param name="broadcast">
+    /// The service broadcast to map.
+    /// </param>
+    /// <returns>
+    /// A DTO containing the broadcast information.
+    /// </returns>
     public static ServiceBroadcastDto FromEntity(
         ServiceBroadcast broadcast)
     {
@@ -30,6 +43,7 @@ public record ServiceBroadcastDto(
             Description: broadcast.Description,
             Theme: broadcast.Theme,
             ServiceMonth: broadcast.ServiceMonth,
-            IsLive: broadcast.IsLive);
+            IsLive: broadcast.IsLive,
+            IsPublished: broadcast.IsPublished);
     }
 }
