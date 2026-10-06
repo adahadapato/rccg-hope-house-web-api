@@ -68,8 +68,8 @@ jobs:
       # IMPORTANT:
       # Upload the artifact BEFORE injecting production secrets.
       #
-      # This prevents connection strings, API keys and email
-      # passwords from being stored inside the GitHub Actions
+      # This prevents connection strings, API keys, JWT keys and
+      # email passwords from being stored inside the GitHub Actions
       # artifact.
       # ============================================================
 
@@ -93,14 +93,15 @@ jobs:
       # Required GitHub repository secrets:
       #
       # DEFAULT_CONNECTION
+      # JWT_KEY
       # API_BIBLE_KEY
       # EMAIL_ADMIN_PASSWORD
       # EMAIL_INFO_PASSWORD
       # OPENAI_API_KEY
       # YOUTUBE_API_KEY
       #
-      # OpenAI:Model remains in appsettings.json because the model
-      # name is configuration rather than a secret.
+      # Non-sensitive production settings remain in
+      # appsettings.Production.json.
       #
       # This step runs AFTER artifact upload so the GitHub artifact
       # remains free of production secrets.
@@ -114,8 +115,8 @@ jobs:
         shell: powershell
         env:
           DEFAULT_CONNECTION: ${{ secrets.DEFAULT_CONNECTION }}
-          API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
           JWT_KEY: ${{ secrets.JWT_KEY }}
+          API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
           EMAIL_ADMIN_PASSWORD: ${{ secrets.EMAIL_ADMIN_PASSWORD }}
           EMAIL_INFO_PASSWORD: ${{ secrets.EMAIL_INFO_PASSWORD }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -124,7 +125,7 @@ jobs:
           $configPath = ".\publish\appsettings.Production.json"
 
           if (-not (Test-Path $configPath)) {
-              throw "Published appsettings.production.json was not found at: $configPath"
+              throw "Published appsettings.Production.json was not found at: $configPath"
           }
 
           # --------------------------------------------------------
@@ -135,13 +136,13 @@ jobs:
               throw "DEFAULT_CONNECTION GitHub secret is not configured."
           }
 
+          if ([string]::IsNullOrWhiteSpace($env:JWT_KEY)) {
+              throw "JWT_KEY GitHub secret is not configured."
+          }
+
           if ([string]::IsNullOrWhiteSpace($env:API_BIBLE_KEY)) {
               throw "API_BIBLE_KEY GitHub secret is not configured."
           }
-		
-	  if ([string]::IsNullOrWhiteSpace($env:JWT_KEY)) {
-    		throw "JWT_KEY GitHub secret is not configured."
-	   }
 
           if ([string]::IsNullOrWhiteSpace($env:EMAIL_ADMIN_PASSWORD)) {
               throw "EMAIL_ADMIN_PASSWORD GitHub secret is not configured."
@@ -162,7 +163,7 @@ jobs:
           Write-Host "Applying RCCG Hope House production configuration..."
 
           # --------------------------------------------------------
-          # Load published appsettings.json
+          # Load published appsettings.Production.json
           # --------------------------------------------------------
 
           $config = Get-Content $configPath -Raw | ConvertFrom-Json
@@ -172,27 +173,27 @@ jobs:
           # --------------------------------------------------------
 
           if ($null -eq $config.ConnectionStrings) {
-              throw "ConnectionStrings configuration section was not found in appsettings.json."
+              throw "ConnectionStrings configuration section was not found in appsettings.Production.json."
+          }
+
+          if ($null -eq $config.Jwt) {
+              throw "Jwt configuration section was not found in appsettings.Production.json."
           }
 
           if ($null -eq $config.ApiBible) {
-              throw "ApiBible configuration section was not found in appsettings.json."
+              throw "ApiBible configuration section was not found in appsettings.Production.json."
           }
 
-	  if ($null -eq $config.Jwt) {
-    		throw "Jwt configuration section was not found in appsettings.Production.json."
-	  }
-
           if ($null -eq $config.EmailSettings) {
-              throw "EmailSettings configuration section was not found in appsettings.json."
+              throw "EmailSettings configuration section was not found in appsettings.Production.json."
           }
 
           if ($null -eq $config.OpenAI) {
-              throw "OpenAI configuration section was not found in appsettings.json."
+              throw "OpenAI configuration section was not found in appsettings.Production.json."
           }
 
           if ($null -eq $config.YouTube) {
-              throw "YouTube configuration section was not found in appsettings.json."
+              throw "YouTube configuration section was not found in appsettings.Production.json."
           }
 
           # --------------------------------------------------------
@@ -202,6 +203,12 @@ jobs:
           $config.ConnectionStrings.DefaultConnection = $env:DEFAULT_CONNECTION
 
           # --------------------------------------------------------
+          # JWT
+          # --------------------------------------------------------
+
+          $config.Jwt.Key = $env:JWT_KEY
+
+          # --------------------------------------------------------
           # API.Bible
           # --------------------------------------------------------
 
@@ -209,9 +216,6 @@ jobs:
 
           # --------------------------------------------------------
           # OpenAI
-          #
-          # Only the API key is injected here.
-          # The configured model remains in appsettings.json.
           # --------------------------------------------------------
 
           $config.OpenAI.ApiKey = $env:OPENAI_API_KEY
@@ -245,6 +249,7 @@ jobs:
 
           Write-Host "Production configuration applied successfully."
           Write-Host "Database connection string configured."
+          Write-Host "JWT key configured."
           Write-Host "API.Bible key configured."
           Write-Host "OpenAI API key configured."
           Write-Host "YouTube API key configured."
