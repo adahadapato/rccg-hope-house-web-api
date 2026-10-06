@@ -30,6 +30,7 @@ Thumbs.db
 
 #others.
 AppSettings-keep.txt
+*.docx
 
 # Separate repositories
 RccgHopeHouse.Mobile/

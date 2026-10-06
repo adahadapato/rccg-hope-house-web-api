@@ -58,6 +58,10 @@ public static class MemberEndpoints
         return group;
     }
 
+    /// <summary>
+    /// Gets the administrative member list with optional inactive members
+    /// and bounded pagination.
+    /// </summary>
     private static async Task<IResult> GetListAsync(
         [FromQuery] bool includeInactive,
         [FromQuery] int skip,
@@ -65,11 +69,28 @@ public static class MemberEndpoints
         IMediator mediator,
         CancellationToken ct)
     {
-        skip = 0;
-        take = 100;
-        includeInactive = false;
-        var query = new GetMembersQuery(includeInactive, skip, take);
-        var list = await mediator.Send(query, ct);
+        if (skip < 0)
+        {
+            skip = 0;
+        }
+
+        if (take <= 0)
+        {
+            take = 100;
+        }
+
+        take = Math.Min(take, 500);
+
+        var query = new GetMembersQuery(
+            includeInactive,
+            skip,
+            take);
+
+        var list =
+            await mediator.Send(
+                query,
+                ct);
+
         return TypedResults.Ok(list);
     }
 

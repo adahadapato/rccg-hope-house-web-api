@@ -3,153 +3,450 @@ using RccgHopeHouse.Core.ValueObjects;
 
 namespace RccgHopeHouse.Core.Entities
 {
+    /// <summary>
+    /// Represents a church member and their membership information.
+    /// </summary>
     public class Member : BaseEntity
     {
+        /// <summary>
+        /// Gets the member's first name.
+        /// </summary>
         public string FirstName { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the member's last name.
+        /// </summary>
         public string LastName { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the member's email address, if provided.
+        /// </summary>
         public EmailAddress? Email { get; private set; }
+
+        /// <summary>
+        /// Gets the member's phone number, if provided.
+        /// </summary>
         public PhoneNumber? PhoneNumber { get; private set; }
 
         /// <summary>
-        /// Birth month (1-12). Null if the member hasn't shared a birthday at all.
+        /// Gets the member's postal address, if provided.
         /// </summary>
-        public int? BirthMonth { get; private set; }
+        public Address? Address { get; private set; }
 
         /// <summary>
-        /// Birth day of month. Always set together with BirthMonth.
+        /// Gets the member's birthday, if provided.
+        /// Month and day are required within the value object,
+        /// while the birth year is optional.
         /// </summary>
-        public int? BirthDay { get; private set; }
+        public Birthday? Birthday { get; private set; }
 
         /// <summary>
-        /// Birth year — optional and independent of BirthMonth/BirthDay.
-        /// A member may share their birthday (month + day, for greeting
-        /// purposes) without sharing the year. Never used as a signal for
-        /// "unknown"; the presence/absence of BirthMonth is that signal.
+        /// Gets the member's marital status, if provided.
         /// </summary>
-        public int? BirthYear { get; private set; }
-
         public MaritalStatus? MaritalStatus { get; private set; }
 
         /// <summary>
-        /// Full wedding anniversary date, including year — required in full
-        /// (not month/day-only like birthdays) since anniversary messages
-        /// reference the number of years married.
+        /// Gets the member's full wedding anniversary date.
+        /// The anniversary may only be set when the member's
+        /// marital status is Married.
         /// </summary>
         public DateOnly? WeddingAnniversary { get; private set; }
 
+        /// <summary>
+        /// Indicates whether the member has consented to
+        /// receiving church communications.
+        /// </summary>
         public bool ConsentToContact { get; private set; }
 
+        /// <summary>
+        /// Indicates whether the member has consented to their
+        /// birthday information being published on the public website.
+        /// </summary>
+        public bool ConsentToBirthdayPublication { get; private set; }
+
+        /// <summary>
+        /// Gets the identifier of the gallery image selected as the
+        /// member's birthday/profile photograph, if one has been selected.
+        /// </summary>
+        public Guid? PhotoId { get; private set; }
+
+        /// <summary>
+        /// Gets the gallery image selected as the member's
+        /// birthday/profile photograph.
+        /// </summary>
+        public GalleryImage? Photo { get; private set; }
+
+        /// <summary>
+        /// Indicates whether the member is currently active.
+        /// </summary>
         public bool IsActive { get; private set; } = true;
+
+        /// <summary>
+        /// Gets the date the member joined the church.
+        /// If no date is supplied when the member is created,
+        /// the date and time of record creation is used.
+        /// </summary>
         public DateTime JoinedDate { get; private set; }
 
-        private Member() { } // EF Core parameterless constructor
+        /// <summary>
+        /// Required by Entity Framework.
+        /// </summary>
+        private Member()
+        {
+        }
 
+        /// <summary>
+        /// Creates a new church member.
+        /// </summary>
+        /// <param name="firstName">
+        /// The member's first name.
+        /// </param>
+        /// <param name="lastName">
+        /// The member's last name.
+        /// </param>
+        /// <param name="email">
+        /// The member's email address, if provided.
+        /// </param>
+        /// <param name="phoneNumber">
+        /// The member's phone number, if provided.
+        /// </param>
+        /// <param name="address">
+        /// The member's postal address, if provided.
+        /// </param>
+        /// <param name="birthday">
+        /// The member's birthday, if provided.
+        /// </param>
+        /// <param name="maritalStatus">
+        /// The member's marital status, if provided.
+        /// </param>
+        /// <param name="weddingAnniversary">
+        /// The member's wedding anniversary, if applicable.
+        /// </param>
+        /// <param name="consentToContact">
+        /// Indicates whether the member has consented to contact.
+        /// </param>
+        /// <param name="consentToBirthdayPublication">
+        /// Indicates whether the member has consented to their
+        /// birthday being published on the public website.
+        /// </param>
+        /// <param name="joinedDate">
+        /// The date the member joined the church. When omitted,
+        /// the current UTC date and time is used.
+        /// </param>
+        /// <returns>
+        /// A newly created member.
+        /// </returns>
         public static Member Create(
             string firstName,
             string lastName,
             string? email = null,
             string? phoneNumber = null,
-            int? birthMonth = null,
-            int? birthDay = null,
-            int? birthYear = null,
+            Address? address = null,
+            Birthday? birthday = null,
             MaritalStatus? maritalStatus = null,
             DateOnly? weddingAnniversary = null,
             bool consentToContact = false,
+            bool consentToBirthdayPublication = false,
             DateTime? joinedDate = null)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(firstName, nameof(firstName));
-            ArgumentException.ThrowIfNullOrWhiteSpace(lastName, nameof(lastName));
+            ArgumentException.ThrowIfNullOrWhiteSpace(
+                firstName,
+                nameof(firstName));
 
-            ValidateBirthday(birthMonth, birthDay, birthYear);
+            ArgumentException.ThrowIfNullOrWhiteSpace(
+                lastName,
+                nameof(lastName));
 
-            if (weddingAnniversary.HasValue && maritalStatus != Enums.MaritalStatus.Married)
-                throw new ArgumentException(
-                    "A wedding anniversary can only be set when marital status is Married.",
-                    nameof(weddingAnniversary));
+            ValidateWeddingAnniversary(
+                maritalStatus,
+                weddingAnniversary);
 
             return new Member
             {
                 FirstName = firstName.Trim(),
                 LastName = lastName.Trim(),
-                Email = EmailAddress.CreateOrNull(email),
-                PhoneNumber = PhoneNumber.CreateOrNull(phoneNumber),
-                BirthMonth = birthMonth,
-                BirthDay = birthDay,
-                BirthYear = birthYear,
-                MaritalStatus = maritalStatus,
-                WeddingAnniversary = weddingAnniversary,
-                ConsentToContact = consentToContact,
-                JoinedDate = joinedDate ?? DateTime.UtcNow,
+
+                Email =
+                    EmailAddress.CreateOrNull(
+                        email),
+
+                PhoneNumber =
+                    PhoneNumber.CreateOrNull(
+                        phoneNumber),
+
+                Address = address,
+                Birthday = birthday,
+
+                MaritalStatus =
+                    maritalStatus,
+
+                WeddingAnniversary =
+                    weddingAnniversary,
+
+                ConsentToContact =
+                    consentToContact,
+
+                ConsentToBirthdayPublication =
+                    consentToBirthdayPublication,
+
+                JoinedDate =
+                    joinedDate ??
+                    DateTime.UtcNow,
+
                 IsActive = true
             };
         }
 
-        public void UpdateProfile(string firstName, string lastName, string? email, string? phoneNumber)
+        /// <summary>
+        /// Updates the member's core profile information.
+        /// </summary>
+        /// <param name="firstName">
+        /// The member's first name.
+        /// </param>
+        /// <param name="lastName">
+        /// The member's last name.
+        /// </param>
+        /// <param name="email">
+        /// The member's email address, if provided.
+        /// </param>
+        /// <param name="phoneNumber">
+        /// The member's phone number, if provided.
+        /// </param>
+        public void UpdateProfile(
+            string firstName,
+            string lastName,
+            string? email,
+            string? phoneNumber)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(firstName, nameof(firstName));
-            ArgumentException.ThrowIfNullOrWhiteSpace(lastName, nameof(lastName));
+            ArgumentException.ThrowIfNullOrWhiteSpace(
+                firstName,
+                nameof(firstName));
 
-            FirstName = firstName.Trim();
-            LastName = lastName.Trim();
-            Email = EmailAddress.CreateOrNull(email);
-            PhoneNumber = PhoneNumber.CreateOrNull(phoneNumber);
+            ArgumentException.ThrowIfNullOrWhiteSpace(
+                lastName,
+                nameof(lastName));
+
+            FirstName =
+                firstName.Trim();
+
+            LastName =
+                lastName.Trim();
+
+            Email =
+                EmailAddress.CreateOrNull(
+                    email);
+
+            PhoneNumber =
+                PhoneNumber.CreateOrNull(
+                    phoneNumber);
+
             MarkAsUpdated();
         }
 
-        public void UpdateBirthday(int? birthMonth, int? birthDay, int? birthYear)
+        /// <summary>
+        /// Updates or removes the member's postal address.
+        /// </summary>
+        /// <param name="address">
+        /// The new address, or null to remove the current address.
+        /// </param>
+        public void UpdateAddress(
+            Address? address)
         {
-            ValidateBirthday(birthMonth, birthDay, birthYear);
-            BirthMonth = birthMonth;
-            BirthDay = birthDay;
-            BirthYear = birthYear;
+            Address = address;
+
             MarkAsUpdated();
         }
 
-        public void UpdateMaritalInfo(MaritalStatus? maritalStatus, DateOnly? weddingAnniversary)
+        /// <summary>
+        /// Updates or removes the member's birthday.
+        /// </summary>
+        /// <param name="birthday">
+        /// The new birthday, or null to remove the current birthday.
+        /// </param>
+        public void UpdateBirthday(
+            Birthday? birthday)
         {
-            if (weddingAnniversary.HasValue && maritalStatus != Enums.MaritalStatus.Married)
+            Birthday = birthday;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Updates the member's marital information.
+        /// </summary>
+        /// <param name="maritalStatus">
+        /// The member's marital status.
+        /// </param>
+        /// <param name="weddingAnniversary">
+        /// The wedding anniversary, if applicable.
+        /// </param>
+        public void UpdateMaritalInfo(
+            MaritalStatus? maritalStatus,
+            DateOnly? weddingAnniversary)
+        {
+            ValidateWeddingAnniversary(
+                maritalStatus,
+                weddingAnniversary);
+
+            MaritalStatus =
+                maritalStatus;
+
+            WeddingAnniversary =
+                weddingAnniversary;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Sets whether the member has consented to
+        /// receiving church communications.
+        /// </summary>
+        /// <param name="consent">
+        /// True when contact consent has been given.
+        /// </param>
+        public void SetConsentToContact(
+            bool consent)
+        {
+            if (ConsentToContact == consent)
+            {
+                return;
+            }
+
+            ConsentToContact = consent;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Sets whether the member has consented to their birthday
+        /// information being published on the public website.
+        /// </summary>
+        /// <param name="consent">
+        /// True when birthday publication consent has been given.
+        /// </param>
+        public void SetBirthdayPublicationConsent(
+            bool consent)
+        {
+            if (ConsentToBirthdayPublication == consent)
+            {
+                return;
+            }
+
+            ConsentToBirthdayPublication =
+                consent;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Assigns an existing gallery image as the member's
+        /// birthday/profile photograph.
+        /// </summary>
+        /// <param name="photoId">
+        /// The identifier of the gallery image to assign.
+        /// </param>
+        public void SetPhoto(
+            Guid photoId)
+        {
+            if (photoId == Guid.Empty)
+            {
+                throw new ArgumentException(
+                    "A valid gallery image ID is required.",
+                    nameof(photoId));
+            }
+
+            if (PhotoId == photoId)
+            {
+                return;
+            }
+
+            PhotoId = photoId;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Removes the gallery image currently assigned as the
+        /// member's birthday/profile photograph.
+        /// </summary>
+        public void RemovePhoto()
+        {
+            if (!PhotoId.HasValue)
+            {
+                return;
+            }
+
+            PhotoId = null;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Updates the date the member joined the church.
+        /// </summary>
+        /// <param name="joinedDate">
+        /// The corrected membership joining date.
+        /// </param>
+        public void UpdateJoinedDate(
+            DateTime joinedDate)
+        {
+            JoinedDate = joinedDate;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Deactivates the member while retaining their record.
+        /// </summary>
+        public void Deactivate()
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            IsActive = false;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Reactivates a previously inactive member.
+        /// </summary>
+        public void Reactivate()
+        {
+            if (IsActive)
+            {
+                return;
+            }
+
+            IsActive = true;
+
+            MarkAsUpdated();
+        }
+
+        /// <summary>
+        /// Validates the relationship between marital status
+        /// and wedding anniversary.
+        /// </summary>
+        /// <param name="maritalStatus">
+        /// The member's marital status.
+        /// </param>
+        /// <param name="weddingAnniversary">
+        /// The wedding anniversary being assigned.
+        /// </param>
+        private static void ValidateWeddingAnniversary(
+            MaritalStatus? maritalStatus,
+            DateOnly? weddingAnniversary)
+        {
+            if (weddingAnniversary.HasValue &&
+                maritalStatus !=
+                Enums.MaritalStatus.Married)
+            {
                 throw new ArgumentException(
                     "A wedding anniversary can only be set when marital status is Married.",
                     nameof(weddingAnniversary));
-
-            MaritalStatus = maritalStatus;
-            WeddingAnniversary = weddingAnniversary;
-            MarkAsUpdated();
-        }
-
-        public void SetConsentToContact(bool consent)
-        {
-            ConsentToContact = consent;
-            MarkAsUpdated();
-        }
-
-        public void Deactivate() => IsActive = false;
-        public void Reactivate() => IsActive = true;
-
-        /// <summary>
-        /// Validates BirthMonth/BirthDay/BirthYear together: month and day
-        /// must be provided as a pair (or not at all), month must be 1-12,
-        /// and day must be valid for that month. Uses a fixed leap year
-        /// (2000) to validate day-of-month ranges so Feb 29 is accepted
-        /// even when no real BirthYear is supplied.
-        /// </summary>
-        private static void ValidateBirthday(int? birthMonth, int? birthDay, int? birthYear)
-        {
-            if (birthMonth is null && birthDay is null)
-                return; // no birthday shared at all — valid
-
-            if (birthMonth is null || birthDay is null)
-                throw new ArgumentException("Birth month and day must both be provided together, or both omitted.");
-
-            if (birthMonth < 1 || birthMonth > 12)
-                throw new ArgumentException("Birth month must be between 1 and 12.", nameof(birthMonth));
-
-            var daysInMonth = DateTime.DaysInMonth(2000, birthMonth.Value); // 2000 is a leap year
-            if (birthDay < 1 || birthDay > daysInMonth)
-                throw new ArgumentException($"Birth day is not valid for the given month.", nameof(birthDay));
-
-            if (birthYear.HasValue && (birthYear < 1900 || birthYear > DateTime.UtcNow.Year))
-                throw new ArgumentException("Birth year must be a realistic past year.", nameof(birthYear));
+            }
         }
     }
 }

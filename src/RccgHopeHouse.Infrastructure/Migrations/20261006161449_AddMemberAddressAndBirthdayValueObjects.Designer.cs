@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RccgHopeHouse.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using RccgHopeHouse.Infrastructure.Persistence;
 namespace RccgHopeHouse.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006161449_AddMemberAddressAndBirthdayValueObjects")]
+    partial class AddMemberAddressAndBirthdayValueObjects
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -894,11 +897,6 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("ConsentToBirthdayPublication")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<bool>("ConsentToContact")
                         .HasColumnType("bit");
 
@@ -935,9 +933,6 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<Guid?>("PhotoId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -946,11 +941,7 @@ namespace RccgHopeHouse.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ConsentToBirthdayPublication");
-
                     b.HasIndex("IsActive");
-
-                    b.HasIndex("PhotoId");
 
                     b.HasIndex("WeddingAnniversary");
 
@@ -1659,11 +1650,6 @@ namespace RccgHopeHouse.Infrastructure.Migrations
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.Member", b =>
                 {
-                    b.HasOne("RccgHopeHouse.Core.Entities.GalleryImage", "Photo")
-                        .WithMany()
-                        .HasForeignKey("PhotoId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.OwnsOne("RccgHopeHouse.Core.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("MemberId")
@@ -1741,8 +1727,6 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.Navigation("Address");
 
                     b.Navigation("Birthday");
-
-                    b.Navigation("Photo");
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.Offering", b =>
