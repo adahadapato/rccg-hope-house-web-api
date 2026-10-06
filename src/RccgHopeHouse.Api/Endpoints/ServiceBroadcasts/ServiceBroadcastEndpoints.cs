@@ -71,6 +71,18 @@ public static class ServiceBroadcastEndpoints
             .ProducesValidationProblem(
                 StatusCodes.Status400BadRequest);
 
+        admin.MapPost(
+                "/synchronize",
+                SynchronizeAsync)
+            .WithName(
+                "SynchronizeServiceBroadcasts")
+            .WithSummary(
+                "Manually synchronize service broadcasts from configured YouTube channels")
+            .Produces(
+                StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status401Unauthorized);
+
         admin.MapPut(
                 "/{id:guid}",
                 UpdateAsync)
@@ -191,6 +203,24 @@ public static class ServiceBroadcastEndpoints
 
         return TypedResults.Created(
             $"/api/service-broadcasts/{result.Id}",
+            result);
+    }
+
+    /// <summary>
+    /// Manually synchronizes service broadcasts from the configured
+    /// YouTube channels using the same synchronization command used
+    /// by the background worker.
+    /// </summary>
+    private static async Task<IResult> SynchronizeAsync(
+        [FromServices] IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var result =
+            await mediator.Send(
+                new SynchronizeServiceBroadcastsCommand(),
+                cancellationToken);
+
+        return TypedResults.Ok(
             result);
     }
 
