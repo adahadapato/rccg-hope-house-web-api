@@ -68,8 +68,9 @@ jobs:
       # IMPORTANT:
       # Upload the artifact BEFORE injecting production secrets.
       #
-      # This prevents API keys and email passwords from being stored
-      # inside the GitHub Actions artifact.
+      # This prevents connection strings, API keys and email
+      # passwords from being stored inside the GitHub Actions
+      # artifact.
       # ============================================================
 
       - name: Upload production artifact
@@ -91,6 +92,7 @@ jobs:
       #
       # Required GitHub repository secrets:
       #
+      # DEFAULT_CONNECTION
       # API_BIBLE_KEY
       # EMAIL_ADMIN_PASSWORD
       # EMAIL_INFO_PASSWORD
@@ -111,6 +113,7 @@ jobs:
         if: github.event_name != 'pull_request'
         shell: powershell
         env:
+          DEFAULT_CONNECTION: ${{ secrets.DEFAULT_CONNECTION }}
           API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
           EMAIL_ADMIN_PASSWORD: ${{ secrets.EMAIL_ADMIN_PASSWORD }}
           EMAIL_INFO_PASSWORD: ${{ secrets.EMAIL_INFO_PASSWORD }}
@@ -126,6 +129,10 @@ jobs:
           # --------------------------------------------------------
           # Validate GitHub secrets
           # --------------------------------------------------------
+
+          if ([string]::IsNullOrWhiteSpace($env:DEFAULT_CONNECTION)) {
+              throw "DEFAULT_CONNECTION GitHub secret is not configured."
+          }
 
           if ([string]::IsNullOrWhiteSpace($env:API_BIBLE_KEY)) {
               throw "API_BIBLE_KEY GitHub secret is not configured."
@@ -159,6 +166,10 @@ jobs:
           # Validate required configuration sections
           # --------------------------------------------------------
 
+          if ($null -eq $config.ConnectionStrings) {
+              throw "ConnectionStrings configuration section was not found in appsettings.json."
+          }
+
           if ($null -eq $config.ApiBible) {
               throw "ApiBible configuration section was not found in appsettings.json."
           }
@@ -174,6 +185,12 @@ jobs:
           if ($null -eq $config.YouTube) {
               throw "YouTube configuration section was not found in appsettings.json."
           }
+
+          # --------------------------------------------------------
+          # Database
+          # --------------------------------------------------------
+
+          $config.ConnectionStrings.DefaultConnection = $env:DEFAULT_CONNECTION
 
           # --------------------------------------------------------
           # API.Bible
@@ -218,6 +235,7 @@ jobs:
               Set-Content $configPath -Encoding UTF8
 
           Write-Host "Production configuration applied successfully."
+          Write-Host "Database connection string configured."
           Write-Host "API.Bible key configured."
           Write-Host "OpenAI API key configured."
           Write-Host "YouTube API key configured."
