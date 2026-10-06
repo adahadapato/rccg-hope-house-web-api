@@ -1,6 +1,6 @@
-﻿using MediatR;
+﻿//some of the code is based on the following source:
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Commands;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Dtos;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Queries;

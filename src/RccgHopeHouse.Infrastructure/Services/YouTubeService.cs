@@ -34,13 +34,11 @@ public sealed class YouTubeService : IYouTubeService
     {
         _configuration = configuration;
 
-        var apiKey =
-            configuration[AppSettings.YouTube.ApiKey];
+        var apiKey = configuration[AppSettings.YouTube.ApiKey];
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException(
-                "The YouTube API key has not been configured.");
+            throw new InvalidOperationException("The YouTube API key has not been configured.");
         }
 
         _client = new Google.Apis.YouTube.v3.YouTubeService(
