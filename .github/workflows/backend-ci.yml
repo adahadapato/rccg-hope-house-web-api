@@ -115,15 +115,16 @@ jobs:
         env:
           DEFAULT_CONNECTION: ${{ secrets.DEFAULT_CONNECTION }}
           API_BIBLE_KEY: ${{ secrets.API_BIBLE_KEY }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
           EMAIL_ADMIN_PASSWORD: ${{ secrets.EMAIL_ADMIN_PASSWORD }}
           EMAIL_INFO_PASSWORD: ${{ secrets.EMAIL_INFO_PASSWORD }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
-          $configPath = ".\publish\appsettings.json"
+          $configPath = ".\publish\appsettings.Production.json"
 
           if (-not (Test-Path $configPath)) {
-              throw "Published appsettings.json was not found at: $configPath"
+              throw "Published appsettings.production.json was not found at: $configPath"
           }
 
           # --------------------------------------------------------
@@ -137,6 +138,10 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:API_BIBLE_KEY)) {
               throw "API_BIBLE_KEY GitHub secret is not configured."
           }
+		
+	  if ([string]::IsNullOrWhiteSpace($env:JWT_KEY)) {
+    		throw "JWT_KEY GitHub secret is not configured."
+	   }
 
           if ([string]::IsNullOrWhiteSpace($env:EMAIL_ADMIN_PASSWORD)) {
               throw "EMAIL_ADMIN_PASSWORD GitHub secret is not configured."
@@ -173,6 +178,10 @@ jobs:
           if ($null -eq $config.ApiBible) {
               throw "ApiBible configuration section was not found in appsettings.json."
           }
+
+	  if ($null -eq $config.Jwt) {
+    		throw "Jwt configuration section was not found in appsettings.Production.json."
+	  }
 
           if ($null -eq $config.EmailSettings) {
               throw "EmailSettings configuration section was not found in appsettings.json."
