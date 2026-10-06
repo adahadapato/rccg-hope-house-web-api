@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Commands;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Dtos;
 using RccgHopeHouse.Application.Features.ServiceBroadcasts.Queries;
@@ -80,6 +81,8 @@ public static class ServiceBroadcastEndpoints
                 "Manually synchronize service broadcasts from configured YouTube channels")
             .Produces(
                 StatusCodes.Status200OK)
+            .ProducesProblem(
+                StatusCodes.Status500InternalServerError)
             .ProducesProblem(
                 StatusCodes.Status401Unauthorized);
 
@@ -211,17 +214,49 @@ public static class ServiceBroadcastEndpoints
     /// YouTube channels using the same synchronization command used
     /// by the background worker.
     /// </summary>
+    /// <remarks>
+    /// The exception details returned by this handler are temporary
+    /// diagnostics and must be removed after the production issue
+    /// has been identified.
+    /// </remarks>
     private static async Task<IResult> SynchronizeAsync(
         [FromServices] IMediator mediator,
+        [FromServices] ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var result =
-            await mediator.Send(
-                new SynchronizeServiceBroadcastsCommand(),
-                cancellationToken);
+        var logger =
+            loggerFactory.CreateLogger(
+                "ServiceBroadcastSynchronization");
 
-        return TypedResults.Ok(
-            result);
+        try
+        {
+            var result =
+                await mediator.Send(
+                    new SynchronizeServiceBroadcastsCommand(),
+                    cancellationToken);
+
+            return TypedResults.Ok(
+                result);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "Manual service broadcast synchronization failed.");
+
+            return TypedResults.Problem(
+                statusCode:
+                    StatusCodes.Status500InternalServerError,
+                title:
+                    "Broadcast synchronization failed",
+                detail:
+                    $"{exception.GetType().Name}: {exception.Message}");
+        }
     }
 
     /// <summary>

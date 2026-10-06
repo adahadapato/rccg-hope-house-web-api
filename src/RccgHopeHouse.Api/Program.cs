@@ -85,9 +85,7 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 
-    app.MapGet(
-            "/",
-            () => Results.Redirect("/swagger"))
+    app.MapGet("/", () => Results.Redirect("/swagger"))
         .ExcludeFromDescription();
 }
 else
