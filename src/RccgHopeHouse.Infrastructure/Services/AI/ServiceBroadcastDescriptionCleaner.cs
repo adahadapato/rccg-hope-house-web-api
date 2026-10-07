@@ -186,9 +186,7 @@ public sealed class ServiceBroadcastDescriptionCleaner
         try
         {
             using var request =
-                new HttpRequestMessage(
-                    HttpMethod.Post,
-                    "https://api.openai.com/v1/responses");
+                new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
 
             request.Headers.Authorization =
                 new AuthenticationHeaderValue(

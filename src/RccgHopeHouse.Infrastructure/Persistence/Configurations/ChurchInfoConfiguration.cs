@@ -5,43 +5,79 @@ using RccgHopeHouse.Core.Entities;
 namespace RccgHopeHouse.Infrastructure.Persistence.Configurations;
 
 /// <summary>
-/// EF Core configuration for <see cref="ChurchInfo"/> — the church's
-/// singleton-style profile: address and About-section content.
+/// EF Core configuration for <see cref="ChurchInfo"/> - the church's
+/// singleton-style profile containing address, About-section content,
+/// and public contact methods.
 /// </summary>
 public class ChurchInfoConfiguration : IEntityTypeConfiguration<ChurchInfo>
 {
+    /// <summary>
+    /// Configures the database mapping for <see cref="ChurchInfo"/>.
+    /// </summary>
+    /// <param name="builder">
+    /// The entity type builder used to configure the entity.
+    /// </param>
     public void Configure(EntityTypeBuilder<ChurchInfo> builder)
     {
         builder.ToTable("ChurchInfo");
         builder.HasKey(c => c.Id);
 
-        // ---- Address ----
-        builder.Property(c => c.AddressLine1).IsRequired().HasMaxLength(200);
-        builder.Property(c => c.AddressLine2).HasMaxLength(200);
-        builder.Property(c => c.City).IsRequired().HasMaxLength(100);
-        builder.Property(c => c.PostCode).HasMaxLength(20);
-        builder.Property(c => c.Country).IsRequired().HasMaxLength(100);
+        // ==================== Address ====================
 
-        // ---- About Section ----
-        builder.Property(c => c.ParishName).IsRequired().HasMaxLength(200);
-        builder.Property(c => c.Tagline).IsRequired().HasMaxLength(300);
-        builder.Property(c => c.AboutLead).IsRequired().HasMaxLength(500);
-        builder.Property(c => c.AboutText).IsRequired().HasMaxLength(2000);
-        builder.Property(c => c.MultiCulturalStat).IsRequired().HasMaxLength(20);
+        builder.Property(c => c.AddressLine1)
+            .IsRequired()
+            .HasMaxLength(200);
 
-        // YearsOfMinistry is a computed, non-persisted property (derived from
-        // EstablishedYear at read time) — explicitly excluded so EF Core
-        // doesn't attempt to map it as a column.
+        builder.Property(c => c.AddressLine2)
+            .HasMaxLength(200);
+
+        builder.Property(c => c.City)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(c => c.PostCode)
+            .HasMaxLength(20);
+
+        builder.Property(c => c.Country)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        // ==================== About Section ====================
+
+        builder.Property(c => c.ParishName)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Property(c => c.Tagline)
+            .IsRequired()
+            .HasMaxLength(300);
+
+        builder.Property(c => c.AboutLead)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        builder.Property(c => c.AboutText)
+            .IsRequired()
+            .HasMaxLength(2000);
+
+        builder.Property(c => c.MultiCulturalStat)
+            .IsRequired()
+            .HasMaxLength(20);
+
+        // YearsOfMinistry is computed from EstablishedYear at read time
+        // and is therefore not persisted in the database.
         builder.Ignore(c => c.YearsOfMinistry);
 
-        // One-to-many: a church's contact methods. Cascade delete is correct
-        // here (unlike PastorPost → ThemeOfTheYear's Restrict) since contact
-        // methods have no meaning independent of the ChurchInfo they belong
-        // to — deleting the church profile should delete its phone/email
-        // entries too.
+        // ==================== Contact Methods ====================
+
+        // A ChurchInfo record can have multiple contact methods, including
+        // phone, email, website, WhatsApp group, and social media links.
+        //
+        // Contact methods have no meaning independently of ChurchInfo,
+        // so deleting ChurchInfo should also delete its contact methods.
         builder.HasMany(c => c.ContactMethods)
-               .WithOne(m => m.ChurchInfo)
-               .HasForeignKey(m => m.ChurchInfoId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(m => m.ChurchInfo)
+            .HasForeignKey(m => m.ChurchInfoId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
