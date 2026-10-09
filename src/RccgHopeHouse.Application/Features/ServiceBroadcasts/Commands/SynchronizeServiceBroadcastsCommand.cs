@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using RccgHopeHouse.Core.Results;
+using RccgHopeHouse.Core.Results.AI;
 
 namespace RccgHopeHouse.Application.Features.ServiceBroadcasts.Commands;
 

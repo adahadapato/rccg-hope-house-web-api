@@ -4,7 +4,8 @@ using RccgHopeHouse.Worker.Services;
 namespace RccgHopeHouse.Worker;
 
 /// <summary>
-/// Provides dependency injection registration for background worker services.
+/// Provides dependency injection registration
+/// for background worker services.
 /// </summary>
 public static class DependencyInjection
 {
@@ -15,12 +16,14 @@ public static class DependencyInjection
     /// The service collection used by the application host.
     /// </param>
     /// <returns>
-    /// The same service collection so additional registrations can be chained.
+    /// The same service collection for chaining.
     /// </returns>
     public static IServiceCollection AddWorker(
         this IServiceCollection services)
     {
         services.AddHostedService<YouTubeEventSyncService>();
+
+        services.AddHostedService<OpenHeavensDevotionalSyncService>();
 
         return services;
     }

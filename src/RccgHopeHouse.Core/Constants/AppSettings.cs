@@ -8,6 +8,14 @@
 public static class AppSettings
 {
     /// <summary>
+    /// Configuration keys for Open Heavens devotional integration.
+    /// </summary>
+    public static class OpenHeavens
+    {
+        public const string BaseUrl = "OpenHeavens:BaseUrl";
+    }
+
+    /// <summary>
     /// Contains configuration keys used for JSON Web Token (JWT)
     /// authentication and token generation.
     /// </summary>

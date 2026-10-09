@@ -7,28 +7,18 @@ using RccgHopeHouse.Application.Features.ServiceBroadcasts.Commands;
 namespace RccgHopeHouse.Worker.Services;
 
 /// <summary>
-/// Periodically triggers synchronization of configured YouTube channels
-/// with church service broadcasts.
+/// Synchronises configured YouTube channels once daily at midnight UK time.
+/// Does not run immediately when the host starts.
 /// </summary>
 public sealed class YouTubeEventSyncService : BackgroundService
 {
-    private static readonly TimeSpan SynchronizationInterval =
-        TimeSpan.FromHours(1);
+    private static readonly TimeZoneInfo UkTimeZone =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<YouTubeEventSyncService> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the
-    /// <see cref="YouTubeEventSyncService"/> class.
-    /// </summary>
-    /// <param name="scopeFactory">
-    /// Factory used to create dependency injection scopes for each
-    /// synchronization operation.
-    /// </param>
-    /// <param name="logger">
-    /// Logger used to record synchronization activity and failures.
-    /// </param>
+    /// <summary>Initialises the scheduled YouTube synchronization worker.</summary>
     public YouTubeEventSyncService(
         IServiceScopeFactory scopeFactory,
         ILogger<YouTubeEventSyncService> logger)
@@ -38,98 +28,74 @@ public sealed class YouTubeEventSyncService : BackgroundService
     }
 
     /// <summary>
-    /// Executes the YouTube synchronization process for the lifetime
-    /// of the host application.
+    /// Waits until the next UK midnight, then synchronises once.
+    /// Recalculates each day to account for GMT/BST transitions.
     /// </summary>
-    /// <param name="stoppingToken">
-    /// Token that is triggered when the host application is stopping.
-    /// </param>
-    protected override async Task ExecuteAsync(
-        CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "YouTube event synchronization service started.");
-
-        /*
-         * Run once immediately when the application starts.
-         *
-         * Subsequent synchronization runs occur at the configured
-         * interval below.
-         */
-        await SynchronizeAsync(stoppingToken);
-
-        using var timer =
-            new PeriodicTimer(SynchronizationInterval);
+        _logger.LogInformation("YouTube synchronization scheduled daily at 00:00 UK time.");
 
         try
         {
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            while (!stoppingToken.IsCancellationRequested)
             {
+                var nowUtc = DateTimeOffset.UtcNow;
+                var ukNow = TimeZoneInfo.ConvertTime(nowUtc, UkTimeZone);
+                var nextDate = DateOnly.FromDateTime(ukNow.DateTime).AddDays(1);
+                var nextLocalMidnight = nextDate.ToDateTime(
+                    TimeOnly.MinValue,
+                    DateTimeKind.Unspecified);
+                var nextUtc = TimeZoneInfo.ConvertTimeToUtc(
+                    nextLocalMidnight,
+                    UkTimeZone);
+
+                _logger.LogInformation(
+                    "Next YouTube synchronization scheduled for {NextRunUtc} UTC.",
+                    nextUtc);
+
+                await Task.Delay(nextUtc - nowUtc.UtcDateTime, stoppingToken);
                 await SynchronizeAsync(stoppingToken);
             }
         }
-        catch (OperationCanceledException)
-            when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            // Normal application shutdown.
+            // Expected during host shutdown.
         }
 
-        _logger.LogInformation(
-            "YouTube event synchronization service stopped.");
+        _logger.LogInformation("YouTube synchronization service stopped.");
     }
 
     /// <summary>
-    /// Creates a dependency injection scope and sends the
-    /// service broadcast synchronization command through MediatR.
+    /// Runs the existing broadcast synchronisation command within a DI scope.
+    /// Failures are logged without stopping the background service.
     /// </summary>
-    /// <param name="cancellationToken">
-    /// Token used to cancel the synchronization operation.
-    /// </param>
-    private async Task SynchronizeAsync(
-        CancellationToken cancellationToken)
+    private async Task SynchronizeAsync(CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation(
-                "Starting YouTube service broadcast synchronization.");
-
-            using var scope =
-                _scopeFactory.CreateScope();
-
-            var mediator =
-                scope.ServiceProvider
-                    .GetRequiredService<IMediator>();
-
-            var result =
-                await mediator.Send(
-                    new SynchronizeServiceBroadcastsCommand(),
-                    cancellationToken);
+            _logger.LogInformation("Starting scheduled YouTube broadcast synchronization.");
+            using var scope = _scopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var result = await mediator.Send(
+                new SynchronizeServiceBroadcastsCommand(),
+                cancellationToken);
 
             _logger.LogInformation(
-                "YouTube service broadcast synchronization completed. " +
-                "Videos examined: {VideosExamined}. " +
-                "Broadcasts created: {BroadcastsCreated}. " +
-                "Broadcasts updated: {BroadcastsUpdated}. " +
-                "Broadcasts skipped: {BroadcastsSkipped}.",
+                "YouTube synchronization completed. Videos examined: {VideosExamined}. " +
+                "Created: {BroadcastsCreated}. Updated: {BroadcastsUpdated}. " +
+                "Skipped: {BroadcastsSkipped}.",
                 result.VideosExamined,
                 result.BroadcastsCreated,
                 result.BroadcastsUpdated,
                 result.BroadcastsSkipped);
         }
-        catch (OperationCanceledException)
-            when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Application shutdown. Allow the host to stop normally.
+            // Expected during host shutdown.
         }
         catch (Exception exception)
         {
-            /*
-             * A failed YouTube synchronization must not terminate
-             * the API process. The next scheduled run can try again.
-             */
-            _logger.LogError(
-                exception,
-                "YouTube service broadcast synchronization failed.");
+            _logger.LogError(exception, "Scheduled YouTube synchronization failed.");
         }
     }
 }

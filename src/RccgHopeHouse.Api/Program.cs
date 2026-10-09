@@ -22,6 +22,7 @@ using RccgHopeHouse.Api.Endpoints.Prophecies;
 using RccgHopeHouse.Api.Endpoints.Sermons;
 using RccgHopeHouse.Api.Endpoints.ServiceBroadcasts;
 using RccgHopeHouse.Api.Endpoints.ThemesOfTheYear;
+using RccgHopeHouse.Core.Interfaces.AI;
 using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 using Serilog;
@@ -147,6 +148,45 @@ api.MapChurchEventEndpoints();
 api.MapAccountEndpoints();
 api.MapDevotionalEndpoints();
 
+// ==================== Open Heavens AI Test ====================
+//
+// Development-only endpoint for testing retrieval and AI
+// processing of an Open Heavens devotional.
+//
+// This endpoint does not save or publish any devotional.
+if (app.Environment.IsDevelopment())
+{
+    api.MapGet(
+        "/devotionals/test-open-heavens/{date}",
+        async (
+            DateOnly date,
+            IOpenHeavensDevotionalService devotionalService,
+            CancellationToken cancellationToken) =>
+        {
+            var result =
+                await devotionalService.GetDevotionalAsync(
+                    date,
+                    cancellationToken);
+
+            if (result is null)
+            {
+                return Results.NotFound(
+                    new
+                    {
+                        message =
+                            "No valid Open Heavens devotional " +
+                            "was retrieved for the requested date.",
+                        date
+                    });
+            }
+
+            return Results.Ok(result);
+        })
+        .WithTags("Open Heavens AI Testing")
+        .WithName("TestOpenHeavensDevotional")
+        .ExcludeFromDescription();
+}
+
 app.MapGet(
         "/health",
         () => Results.Ok(
@@ -160,19 +200,13 @@ app.MapGet(
 // ==================== Database Seeding ====================
 using (var scope = app.Services.CreateScope())
 {
-    var db =
-        scope.ServiceProvider
-            .GetRequiredService<ApplicationDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
     var userManager =
-        scope.ServiceProvider
-            .GetRequiredService<
-                UserManager<ApplicationUser>>();
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     var roleManager =
-        scope.ServiceProvider
-            .GetRequiredService<
-                RoleManager<ApplicationRole>>();
+        scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
     // Applies any pending EF Core migrations.
     await db.Database.MigrateAsync();

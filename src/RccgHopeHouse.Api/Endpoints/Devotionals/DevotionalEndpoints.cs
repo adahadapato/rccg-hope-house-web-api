@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RccgHopeHouse.Application.Features.Devotionals.Commands;
 using RccgHopeHouse.Application.Features.Devotionals.Dtos;
 using RccgHopeHouse.Application.Features.Devotionals.Queries;
+using RccgHopeHouse.Core.Results.AI;
 
 namespace RccgHopeHouse.Api.Endpoints.Devotionals;
 
@@ -62,6 +63,20 @@ public static class DevotionalEndpoints
             .MapGroup("/admin")
             .WithTags("Daily Devotionals - Admin")
             .RequireAuthorization("RequireContentEditor");
+
+        // Manually synchronise today's Open Heavens devotional.
+        // The command handler skips already published records and
+        // preserves existing manually edited devotional content.
+        admin.MapPost("/synchronize", SynchronizeAsync)
+            .WithSummary("Synchronise today's Open Heavens devotional")
+            .WithDescription(
+                "Runs the existing Open Heavens synchronisation command " +
+                "for today's United Kingdom calendar date. Existing " +
+                "published records are not overwritten.")
+            .WithName("SynchronizeOpenHeavensDevotional")
+            .Produces<OpenHeavensDevotionalSynchronizationResult>(
+                StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapGet("/", GetAllForAdminAsync)
             .WithSummary("Get all devotionals for admin")
@@ -191,6 +206,21 @@ public static class DevotionalEndpoints
     // Admin Handlers
     // ============================================================
 
+    /// <summary>
+    /// Manually runs Open Heavens synchronisation for the current UK date.
+    /// Uses the same command as the automatic synchronisation process.
+    /// </summary>
+    private static async Task<IResult> SynchronizeAsync(
+        IMediator mediator,
+        CancellationToken ct)
+    {
+        var command = new SynchronizeOpenHeavensDevotionalsCommand(
+            GetUkToday());
+
+        var result = await mediator.Send(command, ct);
+        return TypedResults.Ok(result);
+    }
+
     private static async Task<IResult> GetAllForAdminAsync(
         IMediator mediator,
         CancellationToken ct)
@@ -227,7 +257,17 @@ public static class DevotionalEndpoints
             Thought: request.Thought,
             CommentaryPoints: request.CommentaryPoints,
             PrayerPoints: request.PrayerPoints,
-            Declaration: request.Declaration);
+            Declaration: request.Declaration,
+            MemoryVerseReference: request.MemoryVerseReference,
+            BibleInOneYearReference: request.BibleInOneYearReference,
+            BibleInOneYearReferences: request.BibleInOneYearReferences,
+            HymnNumber: request.HymnNumber,
+            HymnTitle: request.HymnTitle,
+            HymnLyrics: request.HymnLyrics,
+            AdditionalReading: request.AdditionalReading,
+            KeyPoint: request.KeyPoint,
+            Author: request.Author,
+            SourceUrl: request.SourceUrl);
 
         var result = await mediator.Send(command, ct);
 
@@ -252,7 +292,17 @@ public static class DevotionalEndpoints
             Thought: request.Thought,
             CommentaryPoints: request.CommentaryPoints,
             PrayerPoints: request.PrayerPoints,
-            Declaration: request.Declaration);
+            Declaration: request.Declaration,
+            MemoryVerseReference: request.MemoryVerseReference,
+            BibleInOneYearReference: request.BibleInOneYearReference,
+            BibleInOneYearReferences: request.BibleInOneYearReferences,
+            HymnNumber: request.HymnNumber,
+            HymnTitle: request.HymnTitle,
+            HymnLyrics: request.HymnLyrics,
+            AdditionalReading: request.AdditionalReading,
+            KeyPoint: request.KeyPoint,
+            Author: request.Author,
+            SourceUrl: request.SourceUrl);
 
         var result = await mediator.Send(command, ct);
 
@@ -328,7 +378,17 @@ public record CreateDevotionalRequest(
     string Thought,
     IReadOnlyList<string> CommentaryPoints,
     IReadOnlyList<string> PrayerPoints,
-    string Declaration);
+    string Declaration,
+    string? MemoryVerseReference = null,
+    string? BibleInOneYearReference = null,
+    IReadOnlyList<string>? BibleInOneYearReferences = null,
+    string? HymnNumber = null,
+    string? HymnTitle = null,
+    string? HymnLyrics = null,
+    string? AdditionalReading = null,
+    string? KeyPoint = null,
+    string? Author = null,
+    string? SourceUrl = null);
 
 public record UpdateDevotionalRequest(
     DateOnly DevotionalDate,
@@ -338,4 +398,14 @@ public record UpdateDevotionalRequest(
     string Thought,
     IReadOnlyList<string> CommentaryPoints,
     IReadOnlyList<string> PrayerPoints,
-    string Declaration);
+    string Declaration,
+    string? MemoryVerseReference = null,
+    string? BibleInOneYearReference = null,
+    IReadOnlyList<string>? BibleInOneYearReferences = null,
+    string? HymnNumber = null,
+    string? HymnTitle = null,
+    string? HymnLyrics = null,
+    string? AdditionalReading = null,
+    string? KeyPoint = null,
+    string? Author = null,
+    string? SourceUrl = null);

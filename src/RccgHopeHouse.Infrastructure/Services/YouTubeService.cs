@@ -178,33 +178,39 @@ public sealed class YouTubeService : IYouTubeService
                 nameof(channelId));
         }
 
-        var requestedResults =
-            NormalizeMaxResults(maxResults);
+        var requestedResults = NormalizeMaxResults(maxResults);
 
-        var request =
-            _client.Search.List(
-                "snippet");
+        // Channel uploads playlists are much cheaper than Search.List.
+        // Channels.List and PlaylistItems.List each normally cost 1 quota unit.
+        var channelRequest = _client.Channels.List("contentDetails");
+        channelRequest.Id = channelId.Trim();
 
-        request.ChannelId = channelId.Trim();
-        request.Type = "video";
-        request.Order =
-            SearchResource.ListRequest.OrderEnum.Date;
-        request.MaxResults = requestedResults;
+        var channelResponse = await channelRequest.ExecuteAsync(ct);
+        var uploadsPlaylistId = channelResponse.Items?
+            .FirstOrDefault()?
+            .ContentDetails?
+            .RelatedPlaylists?
+            .Uploads;
 
-        var response =
-            await request.ExecuteAsync(ct);
+        if (string.IsNullOrWhiteSpace(uploadsPlaylistId))
+        {
+            return [];
+        }
 
-        var videoIds = response.Items
-            .Select(item => item.Id?.VideoId)
-            .Where(videoId =>
-                !string.IsNullOrWhiteSpace(videoId))
-            .Select(videoId => videoId!)
+        // Fetch one page only; do not scan the entire channel history.
+        var playlistRequest = _client.PlaylistItems.List("contentDetails");
+        playlistRequest.PlaylistId = uploadsPlaylistId;
+        playlistRequest.MaxResults = requestedResults;
+
+        var playlistResponse = await playlistRequest.ExecuteAsync(ct);
+        var videoIds = (playlistResponse.Items ?? [])
+            .Select(item => item.ContentDetails?.VideoId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        return await GetVideosByIdsAsync(
-            videoIds,
-            ct);
+        return await GetVideosByIdsAsync(videoIds, ct);
     }
 
     /// <inheritdoc />

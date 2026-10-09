@@ -6,7 +6,7 @@ using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Enums;
 using RccgHopeHouse.Core.Interfaces;
 using RccgHopeHouse.Core.Interfaces.AI;
-using RccgHopeHouse.Core.Results;
+using RccgHopeHouse.Core.Results.AI;
 
 namespace RccgHopeHouse.Application.Features.ServiceBroadcasts.Commands;
 
@@ -197,7 +197,7 @@ public sealed class SynchronizeServiceBroadcastsCommandHandler
 
                 /*
                  * Do not send an already processed broadcast to
-                 * OpenAI on every hourly synchronization.
+                 * OpenAI on every synchronization.
                  *
                  * Process it when either its description or theme
                  * is still missing.
@@ -629,7 +629,7 @@ public sealed class SynchronizeServiceBroadcastsCommandHandler
          * The stored description may have been cleaned by OpenAI,
          * while video.Description contains the original YouTube
          * text. Comparing them would cause unnecessary updates
-         * every hour.
+         * on each synchronization.
          */
         var needsUpdate =
             !string.Equals(

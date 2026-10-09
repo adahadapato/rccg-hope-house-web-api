@@ -152,10 +152,9 @@ public static class DependencyInjection
             IYouTubeService,
             YouTubeService>();
 
-        // 8. AI service broadcast description cleaner
-        services.AddHttpClient<
-            IServiceBroadcastDescriptionCleaner,
-            ServiceBroadcastDescriptionCleaner>();
+        // 8. AI services
+        services.AddHttpClient<IServiceBroadcastDescriptionCleaner,  ServiceBroadcastDescriptionCleaner>();
+        services.AddHttpClient<IOpenHeavensDevotionalService, OpenHeavensDevotionalService>();
 
         // 9. API.Bible
         services.Configure<ApiBibleOptions>(
