@@ -31,11 +31,15 @@ internal static class DevotionalBibleReferenceParser
 
         if (!match.Success)
         {
-            throw new ArgumentException(
-                $"Invalid Bible reference: '{reference}'.");
+            throw new ArgumentException($"Invalid Bible reference: '{reference}'.");
         }
 
         var bookName = Normalize(match.Groups["book"].Value);
+
+        if (bookName == "PSALM")
+        {
+            bookName = "PSALMS";
+        }
 
         var book = bibleReferenceService.GetBooks()
             .FirstOrDefault(candidate =>
@@ -44,17 +48,14 @@ internal static class DevotionalBibleReferenceParser
 
         if (book is null)
         {
-            throw new ArgumentException(
-                $"Unknown Bible book: '{reference}'.");
+            throw new ArgumentException($"Unknown Bible book: '{reference}'.");
         }
 
         var chapter = int.Parse(match.Groups["chapter"].Value);
 
-        if (chapter < 1 ||
-            chapter > book.ChapterVerseCounts.Count)
+        if (chapter < 1 || chapter > book.ChapterVerseCounts.Count)
         {
-            throw new ArgumentException(
-                $"Invalid chapter in '{reference}'.");
+            throw new ArgumentException($"Invalid chapter in '{reference}'.");
         }
 
         var hasVerse = match.Groups["start"].Success;
@@ -64,8 +65,7 @@ internal static class DevotionalBibleReferenceParser
             return $"{book.Code}.{chapter}";
         }
 
-        var startVerse = int.Parse(
-            match.Groups["start"].Value);
+        var startVerse = int.Parse(match.Groups["start"].Value);
 
         var endVerse = match.Groups["end"].Success
             ? int.Parse(match.Groups["end"].Value)
@@ -77,8 +77,7 @@ internal static class DevotionalBibleReferenceParser
                 startVerse,
                 endVerse))
         {
-            throw new ArgumentException(
-                $"Invalid verse range in '{reference}'.");
+            throw new ArgumentException($"Invalid verse range in '{reference}'.");
         }
 
         return bibleReferenceService.BuildPassageId(
@@ -119,22 +118,17 @@ internal static class DevotionalBibleReferenceParser
 
                 if (end < start || end - start > 149)
                 {
-                    throw new ArgumentException(
-                        $"Invalid chapter range: '{reference}'.");
+                    throw new ArgumentException($"Invalid chapter range: '{reference}'.");
                 }
 
                 for (var chapter = start; chapter <= end; chapter++)
                 {
-                    result.Add(BuildPassageId(
-                        $"{bookName} {chapter}",
-                        bibleReferenceService));
+                    result.Add(BuildPassageId($"{bookName} {chapter}", bibleReferenceService));
                 }
             }
             else
             {
-                result.Add(BuildPassageId(
-                    reference,
-                    bibleReferenceService));
+                result.Add(BuildPassageId(reference, bibleReferenceService));
             }
         }
 
