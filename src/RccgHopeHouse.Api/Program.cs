@@ -123,8 +123,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ==================== Endpoint Registration ====================
-var api =
-    app.MapGroup("/api");
+var api = app.MapGroup("/api");
 
 api.MapAuthEndpoints();
 api.MapAdminEndpoints();
@@ -187,8 +186,7 @@ if (app.Environment.IsDevelopment())
         .ExcludeFromDescription();
 }
 
-app.MapGet(
-        "/health",
+app.MapGet("/health",
         () => Results.Ok(
             new
             {
@@ -212,11 +210,7 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 
     await RccgHopeHouse.Infrastructure.Persistence.Seeding
-        .DbSeeder.SeedAsync(
-            db,
-            userManager,
-            roleManager,
-            app.Configuration);
+        .DbSeeder.SeedAsync(db, userManager,  roleManager, app.Configuration);
 }
 
 app.Run();
