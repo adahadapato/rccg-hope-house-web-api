@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Core.Entities;
 using RccgHopeHouse.Core.Interfaces;
 
@@ -165,22 +164,22 @@ public class SeoMetadataRepository : ISeoMetadataRepository
         CancellationToken ct = default)
     {
         _context.SeoMetadata.Update(metadata);
-
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     /// <remarks>
-    /// This method physically removes the entity when SaveChangesAsync
-    /// is called, unless a separate DbContext interceptor implements
-    /// soft deletion. Use only after confirming the application's
-    /// deletion strategy.
+    /// Soft-deletes the metadata without physically removing its database row.
+    /// The global BaseEntity query filter in ApplicationDbContext excludes
+    /// soft-deleted records from subsequent normal queries.
     /// </remarks>
     public Task DeleteAsync(
         SeoMetadata metadata,
         CancellationToken ct = default)
     {
-        _context.SeoMetadata.Remove(metadata);
+        metadata.SoftDelete();
+        metadata.MarkAsUpdated();
+        _context.SeoMetadata.Update(metadata);
 
         return Task.CompletedTask;
     }
