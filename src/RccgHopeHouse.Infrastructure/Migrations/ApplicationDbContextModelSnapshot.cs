@@ -1342,6 +1342,78 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.ToTable("ProphecyYears", (string)null);
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.SeoMetadata", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ContentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentTitle")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Keywords")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MetaDescription")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("PagePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SeoTitle")
+                        .IsRequired()
+                        .HasMaxLength(70)
+                        .HasColumnType("nvarchar(70)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentTitle")
+                        .HasDatabaseName("IX_SeoMetadata_ContentTitle");
+
+                    b.HasIndex("PagePath")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SeoMetadata_PagePath")
+                        .HasFilter("[PagePath] IS NOT NULL AND [IsDeleted] = 0");
+
+                    b.HasIndex("ContentType", "ContentId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SeoMetadata_ContentType_ContentId")
+                        .HasFilter("[ContentId] IS NOT NULL AND [IsDeleted] = 0");
+
+                    b.HasIndex("ContentType", "IsActive")
+                        .HasDatabaseName("IX_SeoMetadata_ContentType_IsActive");
+
+                    b.ToTable("SeoMetadata", (string)null);
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.Sermon", b =>
                 {
                     b.Property<Guid>("Id")

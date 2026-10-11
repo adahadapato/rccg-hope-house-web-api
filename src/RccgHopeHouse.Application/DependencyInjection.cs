@@ -2,7 +2,6 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using RccgHopeHouse.Application.Common.Behaviors;
-using RccgHopeHouse.Application.Features.Auth.Commands;
 using RccgHopeHouse.Application.Features.PastorPosts.Commands; // ← Import the command
 
 namespace RccgHopeHouse.Application;
@@ -39,13 +38,7 @@ public static class DependencyInjection
             // cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>)); // Optional
         });
 
-        // ==================== FluentValidation Pipeline ====================
-        // This extension method is now available after installing FluentValidation.DependencyInjectionExtensions
-        //services.AddValidatorsFromAssemblyContaining<DependencyInjection>(
-        //    includeInternalTypes: false, // Only register public validators
-        //    lifetime: ServiceLifetime.Singleton // Validators are stateless, safe as singletons
-        //);
-
+      
         // Register all FluentValidation validators
         // ⚠️ Must use a non-static type from this assembly for generic inference
         services.AddValidatorsFromAssemblyContaining<CreatePastorPostCommand>(

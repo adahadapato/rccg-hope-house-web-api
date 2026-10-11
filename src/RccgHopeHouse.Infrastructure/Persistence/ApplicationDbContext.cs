@@ -51,6 +51,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AnnualPrayerPoint> AnnualPrayerPoints => Set<AnnualPrayerPoint>();
     public DbSet<ChurchEvent> ChurchEvents => Set<ChurchEvent>();
     public DbSet<Devotional> Devotionals => Set<Devotional>();
+    /// <summary>
+    /// Gets the SEO metadata records associated with website content.
+    /// </summary>
+    public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();
 
     /// <summary>
     /// Configures the model schema, applies Fluent API configurations,

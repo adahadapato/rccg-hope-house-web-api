@@ -22,6 +22,8 @@
     <Folder Include="Features\Account\Dtos\" />
     <Folder Include="Features\Account\Validators\" />
     <Folder Include="Features\ContactUs\Validators\" />
+    <Folder Include="Features\Seo\Validators\" />
+    <Folder Include="Features\Seo\Queries\" />
     <Folder Include="Features\Thanksgivng\Validators\" />
   </ItemGroup>
 

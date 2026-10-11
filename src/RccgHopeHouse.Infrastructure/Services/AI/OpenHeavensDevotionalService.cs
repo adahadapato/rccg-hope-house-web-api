@@ -19,7 +19,6 @@ namespace RccgHopeHouse.Infrastructure.Services.AI;
 /// </summary>
 public sealed class OpenHeavensDevotionalService : IOpenHeavensDevotionalService
 {
-    private const string OpenAiEndpoint = "https://api.openai.com/v1/responses";
 
     private const string AiInstructions =
         """
@@ -84,6 +83,7 @@ public sealed class OpenHeavensDevotionalService : IOpenHeavensDevotionalService
     private readonly Uri _baseUri;
     private readonly string _apiKey;
     private readonly string _model;
+    private readonly Uri _openAiEndpoint;
 
     /// <summary>
     /// Creates the service using the existing application settings and typed HTTP client.
@@ -107,6 +107,19 @@ public sealed class OpenHeavensDevotionalService : IOpenHeavensDevotionalService
         _baseUri = baseUri;
         _apiKey = (configuration[AppSettings.OpenAI.ApiKey] ?? string.Empty).Trim();
         _model = (configuration[AppSettings.OpenAI.Model] ?? string.Empty).Trim();
+        var openAiBaseUrl = configuration[AppSettings.OpenAI.BaseUrl]?.Trim();
+        if (!Uri.TryCreate(openAiBaseUrl, UriKind.Absolute, out var openAiBaseUri) ||
+            openAiBaseUri.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(openAiBaseUri.Host, "api.openai.com", StringComparison.OrdinalIgnoreCase) ||
+            openAiBaseUri.AbsolutePath.TrimEnd('/') != "/v1" ||
+            !string.IsNullOrEmpty(openAiBaseUri.Query) ||
+            !string.IsNullOrEmpty(openAiBaseUri.Fragment))
+        {
+            throw new InvalidOperationException(
+                "OpenAI:BaseUrl must be https://api.openai.com/v1/.");
+        }
+
+        _openAiEndpoint = new Uri(openAiBaseUri.ToString().TrimEnd('/') + "/responses");
         _httpClient.Timeout = TimeSpan.FromSeconds(90);
     }
 
@@ -289,7 +302,7 @@ public sealed class OpenHeavensDevotionalService : IOpenHeavensDevotionalService
         string sourceUrl,
         CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, OpenAiEndpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Post, _openAiEndpoint);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
         request.Content = JsonContent.Create(new
         {

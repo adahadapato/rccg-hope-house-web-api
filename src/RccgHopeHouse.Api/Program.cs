@@ -19,6 +19,7 @@ using RccgHopeHouse.Api.Endpoints.Offerings;
 using RccgHopeHouse.Api.Endpoints.PastorPosts;
 using RccgHopeHouse.Api.Endpoints.PrayerRequests;
 using RccgHopeHouse.Api.Endpoints.Prophecies;
+using RccgHopeHouse.Api.Endpoints.Seo;
 using RccgHopeHouse.Api.Endpoints.Sermons;
 using RccgHopeHouse.Api.Endpoints.ServiceBroadcasts;
 using RccgHopeHouse.Api.Endpoints.ThemesOfTheYear;
@@ -37,8 +38,7 @@ var builder = WebApplication.CreateBuilder(args);
 // the standard Microsoft logging abstractions. Serilog acts as the
 // underlying provider and writes those messages to the configured sinks,
 // including the rolling production log file.
-builder.Host.UseSerilog(
-    (context, services, configuration) =>
+builder.Host.UseSerilog((context, services, configuration) =>
     {
         configuration
             .ReadFrom.Configuration(context.Configuration)
@@ -146,6 +146,7 @@ api.MapAnnualPrayerEndpoints();
 api.MapChurchEventEndpoints();
 api.MapAccountEndpoints();
 api.MapDevotionalEndpoints();
+api.MapSeoEndpoints();
 
 // ==================== Open Heavens AI Test ====================
 //

@@ -43,8 +43,7 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "Open Heavens devotional scheduler started.");
+        _logger.LogInformation("Open Heavens devotional scheduler started.");
 
         try
         {
@@ -60,9 +59,7 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
 
                 if (delay > TimeSpan.Zero)
                 {
-                    _logger.LogInformation(
-                        "Next Open Heavens synchronisation: {NextRun}",
-                        nextRun);
+                    _logger.LogInformation("Next Open Heavens synchronisation: {NextRun}", nextRun);
 
                     await Task.Delay(delay, stoppingToken);
                 }
@@ -78,9 +75,7 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(
-                        exception,
-                        "Open Heavens scheduled synchronisation failed.");
+                    _logger.LogError(exception, "Open Heavens scheduled synchronisation failed.");
                 }
             }
         }
@@ -90,16 +85,14 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
             // Expected application shutdown.
         }
 
-        _logger.LogInformation(
-            "Open Heavens devotional scheduler stopped.");
+        _logger.LogInformation("Open Heavens devotional scheduler stopped.");
     }
 
     /// <summary>
     /// Sends the synchronisation command through MediatR
     /// using a scoped service provider.
     /// </summary>
-    private async Task SynchronizeAsync(
-        CancellationToken cancellationToken)
+    private async Task SynchronizeAsync(CancellationToken cancellationToken)
     {
         var ukNow = TimeZoneInfo.ConvertTime(
             DateTimeOffset.UtcNow,
@@ -108,9 +101,7 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
         var devotionalDate = DateOnly.FromDateTime(
             ukNow.DateTime);
 
-        _logger.LogInformation(
-            "Starting Open Heavens synchronisation for {Date}.",
-            devotionalDate);
+        _logger.LogInformation("Starting Open Heavens synchronisation for {Date}.",  devotionalDate);
 
         using var scope = _scopeFactory.CreateScope();
 
@@ -144,21 +135,16 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
 
             foreach (var time in ScheduledTimes)
             {
-                var localDateTime = date.ToDateTime(
-                    time,
-                    DateTimeKind.Unspecified);
+                var localDateTime = date.ToDateTime(time, DateTimeKind.Unspecified);
 
                 if (UkTimeZone.IsInvalidTime(localDateTime))
                 {
                     continue;
                 }
 
-                var offset = UkTimeZone.GetUtcOffset(
-                    localDateTime);
+                var offset = UkTimeZone.GetUtcOffset(localDateTime);
 
-                var candidate = new DateTimeOffset(
-                    localDateTime,
-                    offset);
+                var candidate = new DateTimeOffset(localDateTime, offset);
 
                 if (candidate > now)
                 {
@@ -167,7 +153,6 @@ public sealed class OpenHeavensDevotionalSyncService : BackgroundService
             }
         }
 
-        throw new InvalidOperationException(
-            "Unable to calculate the next Open Heavens execution time.");
+        throw new InvalidOperationException("Unable to calculate the next Open Heavens execution time.");
     }
 }

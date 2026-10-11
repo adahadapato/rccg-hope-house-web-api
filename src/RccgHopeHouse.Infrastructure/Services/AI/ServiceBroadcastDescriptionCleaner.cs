@@ -102,6 +102,7 @@ public sealed class ServiceBroadcastDescriptionCleaner
     private readonly ILogger<ServiceBroadcastDescriptionCleaner> _logger;
     private readonly string _apiKey;
     private readonly string _model;
+    private readonly Uri _openAiEndpoint;
 
     /// <summary>
     /// Initializes a new instance of the
@@ -135,6 +136,20 @@ public sealed class ServiceBroadcastDescriptionCleaner
         _model =
             configuration[AppSettings.OpenAI.Model]?.Trim()
             ?? string.Empty;
+
+        var openAiBaseUrl = configuration[AppSettings.OpenAI.BaseUrl]?.Trim();
+        if (!Uri.TryCreate(openAiBaseUrl, UriKind.Absolute, out var openAiBaseUri) ||
+            openAiBaseUri.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(openAiBaseUri.Host, "api.openai.com", StringComparison.OrdinalIgnoreCase) ||
+            openAiBaseUri.AbsolutePath.TrimEnd('/') != "/v1" ||
+            !string.IsNullOrEmpty(openAiBaseUri.Query) ||
+            !string.IsNullOrEmpty(openAiBaseUri.Fragment))
+        {
+            throw new InvalidOperationException(
+                "OpenAI:BaseUrl must be https://api.openai.com/v1/.");
+        }
+
+        _openAiEndpoint = new Uri(openAiBaseUri.ToString().TrimEnd('/') + "/responses");
     }
 
     /// <inheritdoc />
@@ -186,7 +201,7 @@ public sealed class ServiceBroadcastDescriptionCleaner
         try
         {
             using var request =
-                new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
+                new HttpRequestMessage(HttpMethod.Post, _openAiEndpoint);
 
             request.Headers.Authorization =
                 new AuthenticationHeaderValue(

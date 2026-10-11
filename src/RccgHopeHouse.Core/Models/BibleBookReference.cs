@@ -14,7 +14,4 @@
 /// Number of verses in each chapter.
 /// The first value represents chapter 1, the second chapter 2, and so on.
 /// </param>
-public sealed record BibleBookReference(
-    string Name,
-    string Code,
-    IReadOnlyList<int> ChapterVerseCounts);
+public sealed record BibleBookReference(string Name, string Code, IReadOnlyList<int> ChapterVerseCounts);

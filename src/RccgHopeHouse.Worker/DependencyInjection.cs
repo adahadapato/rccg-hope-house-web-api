@@ -18,13 +18,10 @@ public static class DependencyInjection
     /// <returns>
     /// The same service collection for chaining.
     /// </returns>
-    public static IServiceCollection AddWorker(
-        this IServiceCollection services)
+    public static IServiceCollection AddWorker(this IServiceCollection services)
     {
         services.AddHostedService<YouTubeEventSyncService>();
-
         services.AddHostedService<OpenHeavensDevotionalSyncService>();
-
         return services;
     }
 }
