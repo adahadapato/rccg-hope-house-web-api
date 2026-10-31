@@ -17,7 +17,7 @@ namespace RccgHopeHouse.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -128,6 +128,97 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.Announcement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("EndsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EventEndsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EventStartsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LinkText")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("LinkUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("ShowInBanner")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("ThumbnailPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VenueAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("VenueName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.HasIndex("IsPublished", "StartsAt", "EndsAt");
+
+                    b.ToTable("Announcements", (string)null);
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.AnnualPrayer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -230,6 +321,146 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("AnnualPrayerPoint", (string)null);
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.Celebration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedByAdminAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("CelebrationDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("GalleryCategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("GalleryImageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("InvitationSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Occasion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("PhotoPublicationConsent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("PhotoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("WithdrawnAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GalleryCategoryId")
+                        .HasDatabaseName("IX_Celebrations_GalleryCategoryId");
+
+                    b.HasIndex("GalleryImageId")
+                        .HasDatabaseName("IX_Celebrations_GalleryImageId");
+
+                    b.HasIndex("CelebrationDate", "Status")
+                        .HasDatabaseName("IX_Celebrations_Date_Status");
+
+                    b.HasIndex("MemberId", "CelebrationDate")
+                        .HasDatabaseName("IX_Celebrations_Member_Date");
+
+                    b.HasIndex("MemberId", "Occasion", "CelebrationDate")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Celebrations_Member_Occasion_Date")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("Celebrations", (string)null);
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.CelebrationInvitationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CelebrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CelebrationId")
+                        .HasDatabaseName("IX_CelebrationInvitationTokens_CelebrationId");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("IX_CelebrationInvitationTokens_ExpiresAt");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CelebrationInvitationTokens_TokenHash");
+
+                    b.ToTable("CelebrationInvitationTokens", (string)null);
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.ChurchContactMethod", b =>
@@ -1751,6 +1982,43 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AnnualPrayer");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.Celebration", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.GalleryCategory", "GalleryCategory")
+                        .WithMany()
+                        .HasForeignKey("GalleryCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RccgHopeHouse.Core.Entities.GalleryImage", "GalleryImage")
+                        .WithMany()
+                        .HasForeignKey("GalleryImageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("RccgHopeHouse.Core.Entities.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("GalleryCategory");
+
+                    b.Navigation("GalleryImage");
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.CelebrationInvitationToken", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.Celebration", "Celebration")
+                        .WithMany()
+                        .HasForeignKey("CelebrationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Celebration");
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.ChurchContactMethod", b =>

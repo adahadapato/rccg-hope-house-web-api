@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Api;
 using RccgHopeHouse.Api.Endpoints.Accounts;
 using RccgHopeHouse.Api.Endpoints.Admin;
+using RccgHopeHouse.Api.Endpoints.Announcements;
 using RccgHopeHouse.Api.Endpoints.AnnualPrayers;
 using RccgHopeHouse.Api.Endpoints.Auth;
 using RccgHopeHouse.Api.Endpoints.Bibles;
@@ -147,6 +148,7 @@ api.MapChurchEventEndpoints();
 api.MapAccountEndpoints();
 api.MapDevotionalEndpoints();
 api.MapSeoEndpoints();
+api.MapAnnouncementEndpoints();
 
 // ==================== Open Heavens AI Test ====================
 //

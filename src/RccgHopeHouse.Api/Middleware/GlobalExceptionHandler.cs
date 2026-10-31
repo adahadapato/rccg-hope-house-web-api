@@ -1,29 +1,58 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RccgHopeHouse.Core.Exceptions;
 
 namespace RccgHopeHouse.Api.Middleware;
 
 /// <summary>
 /// Global exception handler that maps known application,
-/// authentication, validation, and domain exceptions to
-/// consistent RFC 7807 ProblemDetails responses.
+/// authentication, validation, domain, and database concurrency
+/// exceptions to consistent RFC 7807 ProblemDetails responses.
 /// </summary>
+/// <remarks>
+/// Database concurrency conflicts are reported as HTTP 409.
+///
+/// Invalid or unavailable celebration invitation responses
+/// receive a controlled HTTP 400 response without exposing
+/// internal invitation or database details.
+///
+/// Unexpected exceptions continue to receive HTTP 500.
+/// </remarks>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
+    /// <summary>
+    /// Initialises the global exception handler.
+    /// </summary>
+    /// <param name="logger">
+    /// Logger used to record application failures.
+    /// </param>
     public GlobalExceptionHandler(
         ILogger<GlobalExceptionHandler> logger)
     {
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(exception);
+
+        var isInvitationResponse =
+            HttpMethods.IsPost(httpContext.Request.Method) &&
+            httpContext.Request.Path.Value?
+                .TrimEnd('/')
+                .EndsWith(
+                    "/celebrations/invitations/respond",
+                    StringComparison.OrdinalIgnoreCase) == true;
+
         var problem = exception switch
         {
             NotFoundException notFound =>
@@ -36,7 +65,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     Detail =
                         notFound.Message,
                     Type =
-                        "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                        "https://httpstatuses.com/404",
                     Instance =
                         httpContext.Request.Path
                 },
@@ -51,23 +80,18 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     Detail =
                         "One or more validation errors occurred.",
                     Type =
-                        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                        "https://httpstatuses.com/400",
                     Instance =
                         httpContext.Request.Path,
                     Errors =
                         fluent.Errors
                             .GroupBy(
-                                error =>
-                                    error.PropertyName)
+                                error => error.PropertyName)
                             .ToDictionary(
-                                group =>
-                                    group.Key,
-                                group =>
-                                    group
-                                        .Select(
-                                            error =>
-                                                error.ErrorMessage)
-                                        .ToArray())
+                                group => group.Key,
+                                group => group
+                                    .Select(error => error.ErrorMessage)
+                                    .ToArray())
                 },
 
             UnauthorizedAccessException unauthorized =>
@@ -80,7 +104,25 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     Detail =
                         unauthorized.Message,
                     Type =
-                        "https://tools.ietf.org/html/rfc7235#section-3.1",
+                        "https://httpstatuses.com/401",
+                    Instance =
+                        httpContext.Request.Path
+                },
+
+            // Optimistic concurrency protection.
+            // This includes simultaneous attempts to
+            // consume the same invitation token.
+            DbUpdateConcurrencyException =>
+                new ProblemDetails
+                {
+                    Status =
+                        StatusCodes.Status409Conflict,
+                    Title =
+                        "Concurrent Update Conflict",
+                    Detail =
+                        "This record was changed by another request. Please refresh and try again.",
+                    Type =
+                        "https://httpstatuses.com/409",
                     Instance =
                         httpContext.Request.Path
                 },
@@ -95,7 +137,27 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     Detail =
                         domain.Message,
                     Type =
-                        "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                        "https://httpstatuses.com/409",
+                    Instance =
+                        httpContext.Request.Path
+                },
+
+            // The invitation handler throws InvalidOperationException
+            // for invalid, expired, revoked or previously used tokens.
+            //
+            // Restrict this mapping to the invitation response
+            // endpoint to avoid changing unrelated API behaviour.
+            InvalidOperationException when isInvitationResponse =>
+                new ProblemDetails
+                {
+                    Status =
+                        StatusCodes.Status400BadRequest,
+                    Title =
+                        "Invitation Unavailable",
+                    Detail =
+                        "This invitation is invalid, expired or no longer available.",
+                    Type =
+                        "https://httpstatuses.com/400",
                     Instance =
                         httpContext.Request.Path
                 },
@@ -110,15 +172,13 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                     Detail =
                         "An unexpected error occurred. Please try again later.",
                     Type =
-                        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+                        "https://httpstatuses.com/500",
                     Instance =
                         httpContext.Request.Path
                 }
         };
 
-        if (
-            problem.Status >= 500
-        )
+        if (problem.Status >= 500)
         {
             _logger.LogError(
                 exception,

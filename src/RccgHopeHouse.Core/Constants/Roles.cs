@@ -6,4 +6,5 @@ public static class Roles
     public const string ContentEditor = "ContentEditor";
     public const string MediaManager = "MediaManager";
     public const string PrayerTeam = "PrayerTeam";
+    public const string UserManager = "UserManager";
 }

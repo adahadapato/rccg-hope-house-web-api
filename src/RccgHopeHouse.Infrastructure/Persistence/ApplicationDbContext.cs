@@ -51,6 +51,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AnnualPrayerPoint> AnnualPrayerPoints => Set<AnnualPrayerPoint>();
     public DbSet<ChurchEvent> ChurchEvents => Set<ChurchEvent>();
     public DbSet<Devotional> Devotionals => Set<Devotional>();
+
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<Celebration> Celebrations => Set<Celebration>();
+
     /// <summary>
     /// Gets the SEO metadata records associated with website content.
     /// </summary>

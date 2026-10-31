@@ -11,8 +11,10 @@ using RccgHopeHouse.Infrastructure.Identity;
 using RccgHopeHouse.Infrastructure.Persistence;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories;
 using RccgHopeHouse.Infrastructure.Persistence.Repositories.Admin;
+using RccgHopeHouse.Infrastructure.Repositories;
 using RccgHopeHouse.Infrastructure.Services;
 using RccgHopeHouse.Infrastructure.Services.AI;
+using RccgHopeHouse.Infrastructure.Services.Sms;
 
 namespace RccgHopeHouse.Infrastructure;
 
@@ -82,6 +84,15 @@ public static class DependencyInjection
         services.AddScoped<IDevotionalRepository, DevotionalRepository>();
         services.AddScoped<IBibleReferenceService, BibleReferenceService>();
         services.AddScoped<ISeoMetadataRepository, SeoMetadataRepository>();
+        services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+        services.AddScoped<ICelebrationRepository, CelebrationRepository>();
+        services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
+        services.AddScoped<IChurchEventRepository, ChurchEventRepository>();
+        services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+        services.AddScoped<ICelebrationRepository, CelebrationRepository>();
+        services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
+        services.AddScoped<IDevotionalRepository, DevotionalRepository>();
+        
 
         // 6. Application-facing infrastructure services
         services.AddScoped<IAuthService, AuthService>();
@@ -90,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IGalleryImageStorage, FileSystemGalleryImageStorageService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<ISmsService, TwilioSmsService>();
 
         // 7. YouTube API
         services.AddScoped<IYouTubeService, YouTubeService>();

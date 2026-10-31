@@ -5,5 +5,7 @@
         public const string RequireAdmin = "RequireAdmin";
         public const string RequireContentEditor = "RequireContentEditor";
         public const string RequireMediaManager = "RequireMediaManager";
+        public const string RequireUserManager = "RequireUserManager";
+        public const string RequirePrayerTeam = "RequirePrayerTeam";
     }
 }

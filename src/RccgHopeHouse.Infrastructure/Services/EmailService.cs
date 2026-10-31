@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Interfaces;
 using System.Net;
 using System.Net.Mail;
@@ -50,57 +51,44 @@ public sealed class EmailService : IEmailService
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _smtpHost =
-            configuration["EmailSettings:SmtpHost"]
-            ?? throw new InvalidOperationException(
-                "EmailSettings:SmtpHost is not configured.");
+        _smtpHost =   configuration[AppSettings.Email.SmtpHost]
+            ?? throw new InvalidOperationException("EmailSettings:SmtpHost is not configured.");
 
-        var smtpPortValue =
-            configuration["EmailSettings:SmtpPort"]
-            ?? throw new InvalidOperationException(
-                "EmailSettings:SmtpPort is not configured.");
+        var smtpPortValue =  configuration[AppSettings.Email.SmtpPort]
+            ?? throw new InvalidOperationException($"{AppSettings.Email.SmtpPort} is not configured.");
 
         if (!int.TryParse(smtpPortValue, out _smtpPort))
         {
-            throw new InvalidOperationException(
-                "EmailSettings:SmtpPort must be a valid number.");
+            throw new InvalidOperationException($"{AppSettings.Email.SmtpPort} must be a valid number.");
         }
 
-        _adminUsername =
-            configuration["EmailSettings:AdminUsername"]
+        _adminUsername =  configuration[AppSettings.Email.AdminUsername]
             ?? throw new InvalidOperationException(
-                "EmailSettings:AdminUsername is not configured.");
+                $"{AppSettings.Email.AdminUsername} is not configured.");
 
-        _adminPassword =
-            configuration["EmailSettings:AdminPassword"]
+        _adminPassword =  configuration[AppSettings.Email.AdminPassword]
             ?? throw new InvalidOperationException(
-                "EmailSettings:AdminPassword is not configured.");
+                $"{AppSettings.Email.AdminPassword} is not configured.");
 
-        _infoUsername =
-            configuration["EmailSettings:InfoUsername"]
+        _infoUsername =  configuration[AppSettings.Email.InfoUsername]
             ?? throw new InvalidOperationException(
-                "EmailSettings:InfoUsername is not configured.");
+                $"{AppSettings.Email.InfoUsername} is not configured.");
 
-        _infoPassword =
-            configuration["EmailSettings:InfoPassword"]
+        _infoPassword =  configuration[AppSettings.Email.InfoPassword]
             ?? throw new InvalidOperationException(
-                "EmailSettings:InfoPassword is not configured.");
+                $"{AppSettings.Email.InfoPassword} is not configured.");
 
-        var defaultFromAddress =
-            configuration["EmailSettings:DefaultFromAddress"]
+        var defaultFromAddress =  configuration[AppSettings.Email.DefaultFromAddress]
             ?? _adminUsername;
 
-        var defaultFromName =
-            configuration["EmailSettings:DefaultFromName"]
+        var defaultFromName = configuration[AppSettings.Email.DefaultFromName]
             ?? "RCCG Hope House";
 
-        _adminFromAddress =
-            new MailAddress(
+        _adminFromAddress =    new MailAddress(
                 defaultFromAddress,
                 defaultFromName);
 
-        _infoFromAddress =
-            new MailAddress(
+        _infoFromAddress =    new MailAddress(
                 _infoUsername,
                 defaultFromName);
     }

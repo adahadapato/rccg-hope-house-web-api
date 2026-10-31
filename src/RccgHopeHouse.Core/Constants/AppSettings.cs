@@ -4,7 +4,7 @@ namespace RccgHopeHouse.Core.Constants;
 /// <summary>
 /// Provides strongly typed constants for application configuration keys.
 /// Centralises configuration paths to avoid duplicated magic strings
-/// throughout the application.
+/// throughout the application to avoid errors.
 /// </summary>
 public static class AppSettings
 {
@@ -36,6 +36,17 @@ public static class AppSettings
         public const string Default = "ConnectionStrings:DefaultConnection";
 
         public const string Redis = "ConnectionStrings:Redis";
+    }
+
+    /// <summary>
+    /// Configuration keys for cross-origin resource sharing.
+    /// </summary>
+    public static class Cors
+    {
+        /// <summary>
+        /// Configuration path containing permitted client origins.
+        /// </summary>
+        public const string AllowedOrigins = "Cors:AllowedOrigins";
     }
 
     // ==================== JWT ====================
@@ -170,6 +181,19 @@ public static class AppSettings
     public static class OpenHeavens
     {
         public const string BaseUrl = "OpenHeavens:BaseUrl";
+    }
+
+
+    //=================== Twilio ====================
+
+    /// <summary>
+    /// Twilio SMS service configuration.
+    /// </summary>
+    public static class Twilio
+    {
+        public const string AccountSid = "Twilio:AccountSid";
+        public const string AuthToken = "Twilio:AuthToken";
+        public const string From = "Twilio:From";
     }
 
     // ==================== Storage ====================
