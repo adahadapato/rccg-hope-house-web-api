@@ -87,11 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
         services.AddScoped<ICelebrationRepository, CelebrationRepository>();
         services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
-        services.AddScoped<IChurchEventRepository, ChurchEventRepository>();
-        services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
-        services.AddScoped<ICelebrationRepository, CelebrationRepository>();
-        services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
-        services.AddScoped<IDevotionalRepository, DevotionalRepository>();
+        
         
 
         // 6. Application-facing infrastructure services

@@ -21,9 +21,9 @@ public sealed record OpenHeavensDevotionalResult(
     string MemoryVerseReference = "",
     string BibleInOneYearReference = "",
     IReadOnlyList<string>? BibleInOneYearReferences = null,
-    string HymnNumber = "",
-    string HymnTitle = "",
-    string HymnLyrics = "",
+    string? HymnNumber = "",
+    string? HymnTitle = "",
+    string? HymnLyrics = "",
     string AdditionalReading = "",
     string KeyPoint = "",
     string Author = "");
