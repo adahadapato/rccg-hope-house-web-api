@@ -88,6 +88,7 @@ public static class DependencyInjection
         services.AddScoped<ICelebrationRepository, CelebrationRepository>();
         services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
         services.AddScoped<IGalleryImageCommentRepository, GalleryImageCommentRepository>();
+        services.AddScoped<IAiPromptRepository, AiPromptRepository>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<IAuthService, AuthService>();
@@ -102,6 +103,9 @@ public static class DependencyInjection
         services.AddScoped<IYouTubeService, YouTubeService>();
 
         // 8. AI services
+        // Admin-editable prompts (AI Prompts page); every AI service reads its prompt here.
+        services.AddScoped<IAiPromptProvider, AiPromptProvider>();
+        services.AddHttpClient<IAiPromptAssistant, AiPromptAssistant>();
         services.AddHttpClient<IServiceBroadcastDescriptionCleaner,  ServiceBroadcastDescriptionCleaner>();
         services.AddHttpClient<IOpenHeavensDevotionalService, OpenHeavensDevotionalService>();
         services.AddHttpClient<ISeoService, SeoService>();

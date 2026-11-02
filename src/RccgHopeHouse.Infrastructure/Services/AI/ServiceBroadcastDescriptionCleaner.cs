@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using RccgHopeHouse.Core.AI;
 using RccgHopeHouse.Core.Constants;
 using RccgHopeHouse.Core.Interfaces.AI;
 
@@ -15,91 +16,9 @@ namespace RccgHopeHouse.Infrastructure.Services.AI;
 public sealed class ServiceBroadcastDescriptionCleaner
     : IServiceBroadcastDescriptionCleaner
 {
-    private const string Instructions =
-    """
-    You are an editor for a church website.
-
-    You will receive the title and description of a YouTube church
-    service broadcast.
-
-    Perform two tasks:
-
-    1. Clean the description.
-    2. Extract the service theme.
-
-    DESCRIPTION RULES:
-
-    Keep only meaningful information directly describing the church
-    service, such as:
-    - the purpose or nature of the service
-    - worship
-    - prayer
-    - the Word or sermon
-    - Holy Communion
-    - the service theme
-    - the minister or speaker
-    - other meaningful information directly related to the service
-
-    ALWAYS REMOVE:
-    - like, share and subscribe requests
-    - calls to follow or stay connected
-    - YouTube channel promotion
-    - television channel information
-    - GOTV, DSTV or other TV platform information
-    - mobile app promotion
-    - Android or iOS app information
-    - websites and URLs
-    - social media accounts and handles
-    - donation or giving information
-    - promotional material
-    - copyright statements
-    - disclaimers
-    - hashtags
-    - unrelated announcements
-    - repeated information
-    - symbols or formatting used for promotional links
-
-    Do not summarize promotional material.
-    Remove it completely.
-
-    Write the cleaned description as one concise paragraph suitable
-    for display on a church website.
-
-    THEME RULES:
-
-    Extract the theme only when it is explicitly stated or clearly
-    identified in the supplied title or description.
-
-    Examples include:
-    "Theme: ACCEPTABLE SERVICE"
-    "with the theme ACCEPTABLE SERVICE"
-    "THEME - ACCEPTABLE SERVICE"
-
-    Return only the theme itself.
-
-    Do not invent a theme.
-    Do not infer a theme merely from the service title.
-    If no theme is explicitly identifiable, return null.
-
-    GENERAL RULES:
-
-    Do not invent facts.
-    Do not add names, speakers, themes or details that are not present
-    in the supplied information.
-
-    Return ONLY valid JSON in exactly this structure:
-
-    {
-      "description": "cleaned description",
-      "theme": "theme or null"
-    }
-
-    The theme property must be null when no theme is identified.
-    Do not include markdown, code fences, headings or commentary.
-    """;
-
     private readonly HttpClient _httpClient;
     private readonly ILogger<ServiceBroadcastDescriptionCleaner> _logger;
+    private readonly IAiPromptProvider _prompts;
     private readonly string _apiKey;
     private readonly string _model;
     private readonly Uri _openAiEndpoint;
@@ -117,13 +36,18 @@ public sealed class ServiceBroadcastDescriptionCleaner
     /// <param name="logger">
     /// Logger used for diagnostic information.
     /// </param>
+    /// <param name="prompts">
+    /// Supplies the admin-editable prompt (AI Prompts page).
+    /// </param>
     public ServiceBroadcastDescriptionCleaner(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<ServiceBroadcastDescriptionCleaner> logger)
+        ILogger<ServiceBroadcastDescriptionCleaner> logger,
+        IAiPromptProvider prompts)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _prompts = prompts;
 
         _apiKey =
             (configuration[AppSettings.OpenAI.ApiKey] ??
@@ -200,6 +124,11 @@ public sealed class ServiceBroadcastDescriptionCleaner
 
         try
         {
+            // Admin-editable prompt (AI Prompts page), or the built-in default.
+            var instructions = await _prompts.GetInstructionsAsync(
+                AiPromptCatalog.ServiceBroadcastCleaner.Key,
+                cancellationToken);
+
             using var request =
                 new HttpRequestMessage(HttpMethod.Post, _openAiEndpoint);
 
@@ -222,7 +151,7 @@ public sealed class ServiceBroadcastDescriptionCleaner
                     new
                     {
                         model = _model,
-                        instructions = Instructions,
+                        instructions,
                         input
                     });
 

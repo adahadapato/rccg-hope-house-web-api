@@ -242,6 +242,30 @@ public static class DependencyInjection
                         }));
 
             // ------------------------------------------------
+            // AI PROMPT SUGGEST POLICY
+            // ------------------------------------------------
+            // Applies to "Ask AI to improve" on the AI Prompts page.
+            //
+            // Maximum: 15 suggestions every 10 minutes per IP address.
+            //
+            // Enough for iterating on a prompt, while limiting
+            // OpenAI costs.
+
+            options.AddPolicy("AiPromptSuggest", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey:
+                            httpContext.Connection
+                                .RemoteIpAddress?
+                                .ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 15,
+                            Window = TimeSpan.FromMinutes(10),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+
+            // ------------------------------------------------
             // RATE LIMIT REJECTION RESPONSE
             // ------------------------------------------------
 

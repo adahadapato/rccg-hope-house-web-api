@@ -61,6 +61,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<GalleryImageComment> GalleryImageComments => Set<GalleryImageComment>();
 
     /// <summary>
+    /// Saved versions of the admin-editable AI prompts.
+    /// </summary>
+    public DbSet<AiPromptVersion> AiPromptVersions => Set<AiPromptVersion>();
+
+    /// <summary>
     /// Gets the SEO metadata records associated with website content.
     /// </summary>
     public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();
