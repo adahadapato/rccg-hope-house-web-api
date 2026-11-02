@@ -19,6 +19,8 @@ public class GalleryImageConfiguration
 
         builder.HasKey(g => g.Id);
 
+        builder.HasQueryFilter(g => !g.IsDeleted);
+
         builder.Property(g => g.Title)
             .IsRequired()
             .HasMaxLength(200);
@@ -84,60 +86,5 @@ public class GalleryImageConfiguration
             .WithMany(c => c.Images)
             .HasForeignKey(g => g.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
-    }
-}
-
-/// <summary>
-/// Configuration for gallery tags.
-/// </summary>
-public class GalleryTagConfiguration
-    : IEntityTypeConfiguration<GalleryTag>
-{
-    public void Configure(
-        EntityTypeBuilder<GalleryTag> builder)
-    {
-        builder.ToTable("GalleryTags");
-
-        builder.HasKey(t => t.Id);
-
-        builder.Property(t => t.Name)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        builder.HasIndex(t => t.Name)
-            .IsUnique();
-    }
-}
-
-/// <summary>
-/// Configuration for the many-to-many relationship
-/// between gallery images and tags.
-/// </summary>
-public class GalleryImageTagConfiguration
-    : IEntityTypeConfiguration<GalleryImageTag>
-{
-    public void Configure(
-        EntityTypeBuilder<GalleryImageTag> builder)
-    {
-        builder.ToTable("GalleryImageTags");
-
-        builder.HasKey(
-            it => new
-            {
-                it.ImageId,
-                it.TagId
-            });
-
-        builder.HasIndex(it => it.TagId);
-
-        builder.HasOne(it => it.Image)
-            .WithMany(i => i.Tags)
-            .HasForeignKey(it => it.ImageId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(it => it.Tag)
-            .WithMany(t => t.Images)
-            .HasForeignKey(it => it.TagId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }

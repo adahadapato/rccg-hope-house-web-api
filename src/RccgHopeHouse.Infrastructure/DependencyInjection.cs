@@ -87,8 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
         services.AddScoped<ICelebrationRepository, CelebrationRepository>();
         services.AddScoped<ICelebrationInvitationTokenRepository, CelebrationInvitationTokenRepository>();
-        
-        
+        services.AddScoped<IGalleryImageCommentRepository, GalleryImageCommentRepository>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<IAuthService, AuthService>();
@@ -106,6 +105,7 @@ public static class DependencyInjection
         services.AddHttpClient<IServiceBroadcastDescriptionCleaner,  ServiceBroadcastDescriptionCleaner>();
         services.AddHttpClient<IOpenHeavensDevotionalService, OpenHeavensDevotionalService>();
         services.AddHttpClient<ISeoService, SeoService>();
+        services.AddHttpClient<ICommentModerationService, CommentModerationService>();
 
         // 9. API.Bible
         services.AddHttpClient<IApiBibleService, ApiBibleService>((serviceProvider, client) =>

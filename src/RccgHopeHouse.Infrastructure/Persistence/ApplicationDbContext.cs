@@ -56,6 +56,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<Celebration> Celebrations => Set<Celebration>();
 
     /// <summary>
+    /// Birthday wishes left by visitors on celebrant photos.
+    /// </summary>
+    public DbSet<GalleryImageComment> GalleryImageComments => Set<GalleryImageComment>();
+
+    /// <summary>
     /// Gets the SEO metadata records associated with website content.
     /// </summary>
     public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();

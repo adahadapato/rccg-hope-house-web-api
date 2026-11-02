@@ -23,4 +23,5 @@ public record GalleryImageFeedDto(
     int Height,
     bool IsFeatured,
     DateTime? EventDate,
-    int DisplayOrder);
+    int DisplayOrder,
+    string? Description = null);

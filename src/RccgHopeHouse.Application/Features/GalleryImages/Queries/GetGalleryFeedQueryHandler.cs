@@ -74,7 +74,8 @@ public class GetGalleryFeedQueryHandler
                     image.Height,
                     image.IsFeatured,
                     image.EventDate,
-                    image.DisplayOrder))
+                    image.DisplayOrder,
+                    image.Description))
             .ToList();
     }
 }

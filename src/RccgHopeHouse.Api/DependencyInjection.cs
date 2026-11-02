@@ -218,6 +218,30 @@ public static class DependencyInjection
                         }));
 
             // ------------------------------------------------
+            // BIRTHDAY WISH SUBMIT POLICY
+            // ------------------------------------------------
+            // Applies to public POST birthday wishes.
+            //
+            // Maximum: 5 wishes every 10 minutes per IP address.
+            //
+            // Stops one visitor flooding a celebrant's photo
+            // and limits how often the AI check is called.
+
+            options.AddPolicy("BirthdayWishSubmit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey:
+                            httpContext.Connection
+                                .RemoteIpAddress?
+                                .ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(10),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+
+            // ------------------------------------------------
             // RATE LIMIT REJECTION RESPONSE
             // ------------------------------------------------
 

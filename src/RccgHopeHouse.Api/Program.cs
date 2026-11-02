@@ -7,6 +7,7 @@ using RccgHopeHouse.Api.Endpoints.Announcements;
 using RccgHopeHouse.Api.Endpoints.AnnualPrayers;
 using RccgHopeHouse.Api.Endpoints.Auth;
 using RccgHopeHouse.Api.Endpoints.Bibles;
+using RccgHopeHouse.Api.Endpoints.BirthdayWishes;
 using RccgHopeHouse.Api.Endpoints.ChurchEvents;
 using RccgHopeHouse.Api.Endpoints.ChurchInfo;
 using RccgHopeHouse.Api.Endpoints.ChurchServices;
@@ -149,6 +150,7 @@ api.MapAccountEndpoints();
 api.MapDevotionalEndpoints();
 api.MapSeoEndpoints();
 api.MapAnnouncementEndpoints();
+api.MapBirthdayWishEndpoints();
 
 // ==================== Open Heavens AI Test ====================
 //

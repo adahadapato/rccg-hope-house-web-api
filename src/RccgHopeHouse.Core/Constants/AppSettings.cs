@@ -219,4 +219,18 @@ public static class AppSettings
     {
         public const string AllowedHosts = "AllowedHosts";
     }
+
+    // ==================== Birthday Wishes ====================
+
+    /// <summary>
+    /// Birthday wishes left on celebrant photos.
+    /// </summary>
+    public static class BirthdayWishes
+    {
+        /// <summary>
+        /// "Ai" (default): the AI publishes, rejects or holds each wish.
+        /// "HoldAll": every wish waits for an admin; the AI is not called.
+        /// </summary>
+        public const string ModerationMode = "BirthdayWishes:ModerationMode";
+    }
 }

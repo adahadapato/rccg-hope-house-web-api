@@ -1096,6 +1096,60 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.ToTable("GalleryImages", (string)null);
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryImageComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("DecisionSource")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GalleryImageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ModeratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModeratedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GalleryImageId", "Status");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("GalleryImageComments", (string)null);
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryImageTag", b =>
                 {
                     b.Property<Guid>("ImageId")
@@ -2041,6 +2095,17 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryImageComment", b =>
+                {
+                    b.HasOne("RccgHopeHouse.Core.Entities.GalleryImage", "GalleryImage")
+                        .WithMany()
+                        .HasForeignKey("GalleryImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GalleryImage");
                 });
 
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.GalleryImageTag", b =>
