@@ -42,7 +42,20 @@ public sealed class CreateAdminUserCommandValidator
             .WithMessage(ValidationMessages.Required)
             .MinimumLength(8)
             .WithMessage(
-                "{PropertyName} must be at least 8 characters long.");
+                "{PropertyName} must be at least 8 characters long.")
+            // These match the Identity password rules in
+            // Infrastructure/DependencyInjection.cs. Checking them
+            // here gives the admin a clear message instead of an
+            // "unexpected error" when the account is created.
+            .Matches("[A-Z]")
+            .WithMessage(
+                "{PropertyName} must contain at least one capital letter (A-Z).")
+            .Matches("[a-z]")
+            .WithMessage(
+                "{PropertyName} must contain at least one small letter (a-z).")
+            .Matches("[0-9]")
+            .WithMessage(
+                "{PropertyName} must contain at least one number (0-9).");
 
         RuleFor(x => x.Roles)
             .NotNull()
