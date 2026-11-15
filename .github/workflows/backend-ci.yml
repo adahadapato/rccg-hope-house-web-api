@@ -55,7 +55,7 @@ jobs:
 
       - name: Publish production API
         run: >
-          dotnet publish src/RccgHopeHouse.Api/RccgHopeHouse.Api.csproj
+          dotnet publish RccgHopeHouse.Api/RccgHopeHouse.Api.csproj
           --configuration Release
           --runtime win-x86
           --self-contained true
