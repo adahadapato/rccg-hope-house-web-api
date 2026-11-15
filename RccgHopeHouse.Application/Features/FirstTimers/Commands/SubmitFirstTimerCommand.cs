@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RccgHopeHouse.Application.Features.FirstTimers.Dtos;
 using RccgHopeHouse.Core.Entities;
@@ -40,20 +41,26 @@ public sealed class SubmitFirstTimerCommandHandler
     private readonly IFirstTimerRepository _repository;
     private readonly IPrayerRequestRepository _prayerRepository;
     private readonly IEmailService _emailService;
-    private readonly ISmsService _smsService;
+    /*
+     * The SMS service is fetched only at the moment a text is sent,
+     * not when this handler is created. Creating it fails when Twilio
+     * is not configured, and that must never stop a visitor's form
+     * from being saved.
+     */
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SubmitFirstTimerCommandHandler> _logger;
 
     public SubmitFirstTimerCommandHandler(
         IFirstTimerRepository repository,
         IPrayerRequestRepository prayerRepository,
         IEmailService emailService,
-        ISmsService smsService,
+        IServiceProvider serviceProvider,
         ILogger<SubmitFirstTimerCommandHandler> logger)
     {
         _repository = repository;
         _prayerRepository = prayerRepository;
         _emailService = emailService;
-        _smsService = smsService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -330,7 +337,11 @@ public sealed class SubmitFirstTimerCommandHandler
                     .Create(firstTimer.PhoneNumber)
                     .ToE164();
 
-            var result = await _smsService.SendAsync(phoneNumber, message, ct);
+            // Throws here, inside the try, if Twilio is not configured.
+            var smsService =
+                _serviceProvider.GetRequiredService<ISmsService>();
+
+            var result = await smsService.SendAsync(phoneNumber, message, ct);
 
             if (!result.IsSuccessful)
             {
