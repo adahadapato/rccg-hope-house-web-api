@@ -309,6 +309,14 @@ public class AuthService : IAuthService
         ApplicationUser user,
         CancellationToken ct)
     {
+        // Record the sign-in for "Last login" on the Users page.
+        // This runs for a password login and after the two-factor
+        // code, but not when a session is quietly refreshed.
+        // If saving fails the person is still signed in.
+        user.LastLoginAt = DateTime.UtcNow;
+
+        await _userManager.UpdateAsync(user);
+
         var roles =
             await _userManager.GetRolesAsync(user);
 
