@@ -90,6 +90,7 @@ public static class DependencyInjection
         services.AddScoped<IGalleryImageCommentRepository, GalleryImageCommentRepository>();
         services.AddScoped<IAiPromptRepository, AiPromptRepository>();
         services.AddScoped<IFirstTimerRepository, FirstTimerRepository>();
+        services.AddScoped<ISiteVisitRepository, SiteVisitRepository>();
 
         // 6. Application-facing infrastructure services
         services.AddScoped<IAuthService, AuthService>();

@@ -15,6 +15,7 @@ using RccgHopeHouse.Api.Endpoints.ChurchServices;
 using RccgHopeHouse.Api.Endpoints.ContactUs;
 using RccgHopeHouse.Api.Endpoints.Devotionals;
 using RccgHopeHouse.Api.Endpoints.FirstTimers;
+using RccgHopeHouse.Api.Endpoints.SiteVisits;
 using RccgHopeHouse.Api.Endpoints.Gallery;
 using RccgHopeHouse.Api.Endpoints.GalleryCategories;
 using RccgHopeHouse.Api.Endpoints.GivingTypes;
@@ -155,6 +156,7 @@ api.MapAnnouncementEndpoints();
 api.MapBirthdayWishEndpoints();
 api.MapAiPromptEndpoints();
 api.MapFirstTimerEndpoints();
+api.MapSiteVisitEndpoints();
 
 // ==================== Open Heavens AI Test ====================
 //

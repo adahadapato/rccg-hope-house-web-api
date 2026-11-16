@@ -71,6 +71,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<FirstTimer> FirstTimers => Set<FirstTimer>();
 
     /// <summary>
+    /// Anonymous website visits, one row per visitor per day.
+    /// </summary>
+    public DbSet<SiteVisit> SiteVisits => Set<SiteVisit>();
+
+    /// <summary>
     /// Gets the SEO metadata records associated with website content.
     /// </summary>
     public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();

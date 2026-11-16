@@ -1980,6 +1980,46 @@ namespace RccgHopeHouse.Infrastructure.Migrations
                     b.ToTable("ServiceBroadcasts", (string)null);
                 });
 
+            modelBuilder.Entity("RccgHopeHouse.Core.Entities.SiteVisit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("EngagedSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FirstSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsMobile")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PageViews")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("VisitDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("VisitorHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LastSeenAt");
+
+                    b.HasIndex("VisitDate", "VisitorHash")
+                        .IsUnique();
+
+                    b.ToTable("SiteVisits", (string)null);
+                });
+
             modelBuilder.Entity("RccgHopeHouse.Core.Entities.ThemeOfTheYear", b =>
                 {
                     b.Property<Guid>("Id")
